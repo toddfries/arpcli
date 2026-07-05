@@ -11,6 +11,7 @@ WriteMakefile(
     PREREQ_PM        => {
         'HTTP::Tiny' => '0.056',
         'JSON::PP'   => '2.27344',
+        'YAML::PP'   => '0.38',
     },
     TEST_REQUIRES    => {
         'Test::More' => '1.302',

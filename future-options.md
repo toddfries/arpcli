@@ -17,7 +17,7 @@ Reference for later arpcli passes.
 - [ ] Detect API key scope by probing a write endpoint and caching result
 - [ ] Retry with backoff on 429 and 502
 - [ ] ETag / If-None-Match if API adds caching headers
-- [ ] Watch for new endpoints in docs.yaml (diff on upgrade)
+
 
 ## Output
 
@@ -40,5 +40,5 @@ Reference for later arpcli passes.
 
 ## Documentation
 
-- [ ] Sync manuals/ when OpenAPI spec changes (script to pull docs.yaml)
+
 - [ ] Example session in README for `arpcli status` sample output

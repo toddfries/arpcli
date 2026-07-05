@@ -1,0 +1,241 @@
+---
+bootServer:
+  cli: servers boot <uuid>
+  http_method: POST
+  method: boot
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/boot
+  scope: write
+  summary: Boot a server
+  tags:
+  - Server Actions
+changeIso:
+  cli: servers change-iso <uuid> <iso_file>
+  http_method: POST
+  method: change_iso
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/change_iso
+  scope: write
+  summary: Change mounted ISO
+  tags:
+  - Server Actions
+createDnsRecord:
+  cli: null
+  http_method: POST
+  method: create
+  module: DnsRecords
+  path: /api/v1/dns_records
+  scope: write
+  summary: Create a DNS record
+  tags:
+  - DNS Records
+createServer:
+  cli: null
+  http_method: POST
+  method: create
+  module: Servers
+  path: /api/v1/servers
+  scope: provision
+  summary: Create a server
+  tags:
+  - Servers
+createSshKey:
+  cli: null
+  http_method: POST
+  method: create
+  module: SshKeys
+  path: /api/v1/ssh_keys
+  scope: write
+  summary: Create an SSH key
+  tags:
+  - SSH Keys
+deleteDnsRecord:
+  cli: null
+  http_method: DELETE
+  method: delete
+  module: DnsRecords
+  path: /api/v1/dns_records/{id}
+  scope: write
+  summary: Delete a DNS record
+  tags:
+  - DNS Records
+deleteServer:
+  cli: servers delete <uuid>
+  http_method: DELETE
+  method: delete
+  module: Servers
+  path: /api/v1/servers/{uuid}
+  scope: write
+  summary: Delete a server
+  tags:
+  - Servers
+deleteSshKey:
+  cli: null
+  http_method: DELETE
+  method: delete
+  module: SshKeys
+  path: /api/v1/ssh_keys/{id}
+  scope: write
+  summary: Delete an SSH key
+  tags:
+  - SSH Keys
+getServerBandwidth:
+  cli: servers bandwidth <uuid>
+  http_method: GET
+  method: bandwidth
+  module: Servers
+  path: /api/v1/servers/{uuid}/bandwidth
+  scope: read
+  summary: Get server bandwidth
+  tags:
+  - Bandwidth
+getServerBilling:
+  cli: servers billing <uuid>
+  http_method: GET
+  method: billing
+  module: Servers
+  path: /api/v1/servers/{uuid}/billing
+  scope: read
+  summary: Get server billing breakdown
+  tags:
+  - Billing
+listDnsRecords:
+  cli: dns-records list
+  http_method: GET
+  method: list
+  module: DnsRecords
+  path: /api/v1/dns_records
+  scope: read
+  summary: List DNS records
+  tags:
+  - DNS Records
+listIsos:
+  cli: isos list
+  http_method: GET
+  method: list
+  module: Isos
+  path: /api/v1/isos
+  scope: read
+  summary: List available ISOs
+  tags:
+  - ISOs
+listLocations:
+  cli: locations list
+  http_method: GET
+  method: list
+  module: Locations
+  path: /api/v1/locations
+  scope: read
+  summary: List locations
+  tags:
+  - Locations
+listOsTemplates:
+  cli: os-templates list
+  http_method: GET
+  method: list
+  module: OsTemplates
+  path: /api/v1/os_templates
+  scope: read
+  summary: List available OS templates
+  tags:
+  - OS Templates
+listPlans:
+  cli: plans list
+  http_method: GET
+  method: list
+  module: Plans
+  path: /api/v1/plans
+  scope: read
+  summary: List plans
+  tags:
+  - Plans
+listServers:
+  cli: servers list
+  http_method: GET
+  method: list
+  module: Servers
+  path: /api/v1/servers
+  scope: read
+  summary: List servers
+  tags:
+  - Servers
+listSshHostKeys:
+  cli: servers ssh-host-keys <uuid>
+  http_method: GET
+  method: ssh_host_keys
+  module: Servers
+  path: /api/v1/servers/{uuid}/ssh_host_keys
+  scope: read
+  summary: List SSH host keys
+  tags:
+  - SSH Host Keys
+listSshKeys:
+  cli: ssh-keys list
+  http_method: GET
+  method: list
+  module: SshKeys
+  path: /api/v1/ssh_keys
+  scope: read
+  summary: List SSH keys
+  tags:
+  - SSH Keys
+powerOffServer:
+  cli: servers poweroff <uuid>
+  http_method: POST
+  method: poweroff
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/poweroff
+  scope: write
+  summary: Power off a server
+  tags:
+  - Server Actions
+resetServer:
+  cli: servers reset <uuid>
+  http_method: POST
+  method: reset
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/reset
+  scope: write
+  summary: Reset a server
+  tags:
+  - Server Actions
+setParameter:
+  cli: servers set-parameter <uuid> <param> <value>
+  http_method: POST
+  method: set_parameter
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/set_parameter
+  scope: write
+  summary: Set a server parameter
+  tags:
+  - Server Actions
+showServer:
+  cli: servers show <uuid>
+  http_method: GET
+  method: show
+  module: Servers
+  path: /api/v1/servers/{uuid}
+  scope: read
+  summary: Show a server
+  tags:
+  - Servers
+shutdownServer:
+  cli: servers shutdown <uuid>
+  http_method: POST
+  method: shutdown
+  module: ServerActions
+  path: /api/v1/servers/{uuid}/actions/shutdown
+  scope: write
+  summary: Shut down a server
+  tags:
+  - Server Actions
+updateDnsRecord:
+  cli: null
+  http_method: PATCH
+  method: update
+  module: DnsRecords
+  path: /api/v1/dns_records/{id}
+  scope: write
+  summary: Update a DNS record
+  tags:
+  - DNS Records

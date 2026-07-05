@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  version: "9.9.9"
+servers:
+  - url: https://example.test
+paths:
+  /api/v1/widgets:
+    get:
+      tags: [Widgets]
+      summary: List widgets
+      operationId: listWidgets
+  /api/v1/widgets/{id}:
+    delete:
+      tags: [Widgets]
+      summary: Delete a widget
+      operationId: deleteWidget
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              enum: [unauthorized, not_found]
+    Bandwidth:
+      type: object
+      properties:
+        range:
+          enum: [1h, 30d]
+    Server:
+      type: object
+      required: [uuid, label]
+      properties:
+        uuid:
+          type: string
+        label:
+          type: string

@@ -14,6 +14,12 @@ minimum context needed to extend arpcli without re-reading the full OpenAPI spec
 | Errors | [errors.md](errors.md) | HTTP status and `error.type` handling |
 | Project layout | [project-layout.md](project-layout.md) | Where code, tests, and docs live |
 
+## Sync
+
+Run `script/sync-openapi` after API releases. It fetches the OpenAPI spec,
+updates `spec/`, regenerates auto-synced manuals, and refreshes
+`spec/registry.json`.
+
 ## External docs
 
 - Live spec: https://phoenix.arpnetworks.com/api/docs

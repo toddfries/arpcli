@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin qw($Bin);
+use lib "$Bin/../vendor/lib/perl5", "$Bin/../lib";
+
+use ArpCLI::OpenAPI::Sync;
+
+sub usage {
+    print <<'USAGE';
+usage: sync-openapi [options]
+
+Fetch the ARP Networks OpenAPI spec. When the spec changes, update spec/,
+manuals/, spec/registry.json, and spec/endpoint-manifest.json.
+
+options:
+  --url URL     spec URL (default: https://phoenix.arpnetworks.com/api/docs.yaml)
+  --dry-run     report changes without writing files
+  --force       refresh generated files even if the spec digest is unchanged
+  -h, --help    show this help
+USAGE
+    exit 0;
+}
+
+my %opts;
+while (@ARGV) {
+    my $arg = shift @ARGV;
+    if ($arg eq '-h' || $arg eq '--help') {
+        usage();
+    }
+    elsif ($arg eq '--dry-run') {
+        $opts{dry_run} = 1;
+    }
+    elsif ($arg eq '--force') {
+        $opts{force} = 1;
+    }
+    elsif ($arg eq '--url') {
+        $opts{url} = shift @ARGV or die "sync-openapi: --url requires a value\n";
+    }
+    else {
+        die "sync-openapi: unknown option: $arg\n";
+    }
+}
+
+my $result = ArpCLI::OpenAPI::Sync->new(%opts)->run;
+
+print $result->{message}, "\n";
+if ($result->{digest}) {
+    print "digest: $result->{digest}\n";
+}
+if ($result->{old_digest}) {
+    print "previous: $result->{old_digest}\n";
+}
+if ($result->{written}) {
+    print "written:\n";
+    print "  $_\n" for @{ $result->{written} };
+}
+if ($result->{unknown_ops} && @{ $result->{unknown_ops} }) {
+    print "new operationIds (added to spec/endpoint-map.yaml):\n";
+    print "  $_\n" for @{ $result->{unknown_ops} };
+}
+if ($result->{coverage}) {
+    my $c = $result->{coverage};
+    if (@{ $c->{missing_api} // [] }) {
+        print "missing API methods:\n";
+        print "  $_\n" for @{ $c->{missing_api} };
+    }
+    if (@{ $c->{missing_cli} // [] }) {
+        print "missing CLI commands:\n";
+        print "  $_\n" for @{ $c->{missing_cli} };
+    }
+}
+
+exit($result->{changed} ? 0 : 0);

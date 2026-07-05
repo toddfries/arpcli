@@ -1,0 +1,1722 @@
+openapi: 3.1.0
+info:
+  title: Platform API
+  version: "1.0.0"
+  description: |
+    The [ARP Networks](https://arpnetworks.com) public API lets you manage your servers programmatically.
+
+    ## Authentication
+
+    All requests require a bearer token in the `Authorization` header:
+
+        Authorization: Bearer arp_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    Tokens are created in your [dashboard](https://phoenix.arpnetworks.com) under **API Keys**. You see the
+    plaintext token once at creation time; after that only the last four
+    characters are visible. If you lose a token, revoke it and create a new one.
+
+    ## Scopes
+
+    Every key has a scope:
+
+    - `read` — allows GET requests
+    - `write` — allows server actions (e.g. power controls), and all `read` scope requests
+    - `provision` — allows creating new servers, and all `write` and `read` scope requests
+
+    Scopes are set at key creation and cannot be changed afterward.
+
+    ## Rate limits
+
+    Two layers apply:
+
+    - 120 requests per minute per client IP (pre-authentication)
+    - 60 requests per minute per API key (post-authentication)
+
+    Exceeding either limit returns `429 Too Many Requests`.
+
+    ## Pagination
+
+    List endpoints support `page` (1-indexed) and `per_page` (default 50,
+    max 100). Pagination metadata is returned under `meta.pagination`.
+
+    ## Errors
+
+    Errors are returned as JSON in the following format:
+
+        {
+          "error": {
+            "type": "unauthorized",
+            "message": "Invalid or missing API key"
+          }
+        }
+
+  license:
+    name: Proprietary
+servers:
+  - url: https://arpnetworks.com
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Bandwidth
+    description: Server bandwidth usage data.
+  - name: Billing
+    description: Server billing breakdown (line items and totals).
+  - name: DNS Records
+    description: Manage reverse DNS (PTR) records for your account's IP addresses.
+  - name: ISOs
+    description: List currently available ISO images.
+  - name: Locations
+    description: Discover data center locations for server creation.
+  - name: OS Templates
+    description: List currently available OS templates.
+  - name: Plans
+    description: Discover plan IDs for server creation.
+  - name: Servers
+    description: List and inspect your virtual servers.
+  - name: Server Actions
+    description: Boot, shutdown, power off, and reset a server.
+  - name: SSH Keys
+    description: Manage SSH public keys associated with your user account.
+  - name: SSH Host Keys
+    description: Retrieve SSH host key fingerprints for a server.
+paths:
+  /api/v1/locations:
+    get:
+      tags: [Locations]
+      summary: List locations
+      description: Returns the current list of data center locations where new servers can be ordered.
+      operationId: listLocations
+      responses:
+        "200":
+          description: A list of locations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationsList"
+              examples:
+                default:
+                  $ref: "#/components/examples/LocationsListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/isos:
+    get:
+      tags: [ISOs]
+      summary: List available ISOs
+      description: Returns the current list of available ISO images.
+      operationId: listIsos
+      responses:
+        "200":
+          description: A list of available ISO filenames.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IsosList"
+              examples:
+                default:
+                  $ref: "#/components/examples/IsosListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/plans:
+    get:
+      tags: [Plans]
+      summary: List plans
+      description: |
+        Returns plans available to the requesting account whose product code
+        starts with `vps_` or `thunder_`. Plans with other product code
+        prefixes are not returned. Results are also limited to active plans
+        that are visible to the account and priced for at least one billing
+        interval (hourly or monthly) under the account's pricing tier.
+      operationId: listPlans
+      responses:
+        "200":
+          description: A list of plans.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlansList"
+              examples:
+                default:
+                  $ref: "#/components/examples/PlansListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/os_templates:
+    get:
+      tags: [OS Templates]
+      summary: List available OS templates
+      description: Returns the current list of available OS templates, grouped by OS family.
+      operationId: listOsTemplates
+      responses:
+        "200":
+          description: A map of available OS template families.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OsTemplatesList"
+              examples:
+                default:
+                  $ref: "#/components/examples/OsTemplatesListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/servers:
+    get:
+      tags: [Servers]
+      summary: List servers
+      description: Returns all servers belonging to the authenticated key's account.
+      operationId: listServers
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: A paginated list of servers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServersList"
+              examples:
+                default:
+                  $ref: "#/components/examples/ServersListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    post:
+      tags: [Servers]
+      summary: Create a server
+      description: |
+        Provisions a new server on your account. Requires a `provision`-scoped API key.
+
+        Billing mode is always `on-demand`. Coupon codes are not supported through this endpoint.
+
+        This endpoint is rate limited to 7 requests per minute per account,
+        in place of the standard per-key limit described above.
+      operationId: createServer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServerCreateRequest"
+            examples:
+              default:
+                $ref: "#/components/examples/ServerCreateExample"
+      responses:
+        "201":
+          description: The server was provisioned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [server]
+                properties:
+                  server:
+                    $ref: "#/components/schemas/Server"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/servers/{uuid}:
+    get:
+      tags: [Servers]
+      summary: Show a server
+      description: Returns a single server by UUID.
+      operationId: showServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "200":
+          description: The requested server.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [server]
+                properties:
+                  server:
+                    $ref: "#/components/schemas/Server"
+              examples:
+                default:
+                  $ref: "#/components/examples/ServerShowExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    delete:
+      tags: [Servers]
+      summary: Delete a server
+      description: |
+        Deletes the server. The server is immediately removed from your account's server list.
+
+        Requires a `write`-scoped API key.
+      operationId: deleteServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "202":
+          description: Deletion accepted and queued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [queued]
+              example:
+                status: queued
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/bandwidth:
+    get:
+      tags: [Bandwidth]
+      summary: Get server bandwidth
+      description: |
+        Returns inbound, outbound, and total transfer for the server over a
+        time range. Defaults to the last 30 days when no `range` is given.
+      operationId: getServerBandwidth
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+        - name: range
+          in: query
+          description: Time range for the bandwidth data.
+          required: false
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d, 30d]
+            default: 30d
+      responses:
+        "200":
+          description: Bandwidth data for the requested range.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bandwidth]
+                properties:
+                  bandwidth:
+                    $ref: "#/components/schemas/Bandwidth"
+              examples:
+                default:
+                  $ref: "#/components/examples/BandwidthExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/servers/{uuid}/billing:
+    get:
+      tags: [Billing]
+      summary: Get server billing breakdown
+      description: |
+        Returns the billing line items and total for the server, matching the breakdown
+        shown on the dashboard billing page.
+
+        The response structure varies by `billing_mode`:
+        - **reserved** -- includes `billing_mode`, `interval`, `line_items`, and `total`.
+          A `free` flag is present when the server has a zero price override.
+        - **on-demand** -- additionally includes `est_monthly` (projected monthly cost at
+          the current hourly rate). When the server has an active usage record,
+          `uninvoiced_hours` and `uninvoiced_amount` are also included.
+      operationId: getServerBilling
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "200":
+          description: Billing breakdown for the server.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [billing]
+                properties:
+                  billing:
+                    $ref: "#/components/schemas/ServerBilling"
+              examples:
+                reserved:
+                  $ref: "#/components/examples/BillingReservedExample"
+                on_demand:
+                  $ref: "#/components/examples/BillingOnDemandExample"
+                free:
+                  $ref: "#/components/examples/BillingFreeExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/servers/{uuid}/ssh_host_keys:
+    get:
+      tags: [SSH Host Keys]
+      summary: List SSH host keys
+      description: Returns the SSH host key fingerprints for the specified server.
+      operationId: listSshHostKeys
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "200":
+          description: A list of SSH host key fingerprints.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SshHostKeysList"
+              examples:
+                default:
+                  $ref: "#/components/examples/SshHostKeysListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/servers/{uuid}/actions/boot:
+    post:
+      tags: [Server Actions]
+      summary: Boot a server
+      description: |
+        Powers on a server that is currently off. Has no effect otherwise.
+      operationId: bootServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/actions/shutdown:
+    post:
+      tags: [Server Actions]
+      summary: Shut down a server
+      description: |
+        Sends an ACPI shutdown signal, allowing the guest OS to shut down
+        cleanly.
+      operationId: shutdownServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/actions/poweroff:
+    post:
+      tags: [Server Actions]
+      summary: Power off a server
+      description: |
+        Forcibly powers off a server without waiting for the guest OS. Equivalent
+        to pulling the plug. Any unsaved data may be lost.
+        Use `shutdown` for a graceful stop.
+      operationId: powerOffServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/actions/reset:
+    post:
+      tags: [Server Actions]
+      summary: Reset a server
+      description: |
+        Hard resets a server. Equivalent to pressing the reset button on a
+        physical machine. Any unsaved data may be lost.
+      operationId: resetServer
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/actions/change_iso:
+    post:
+      tags: [Server Actions]
+      summary: Change mounted ISO
+      description: |
+        Mounts a different ISO image on the server. The `iso_file` value must
+        be one of the ISOs currently available (see `GET /api/v1/isos`).
+        Requires a `write`-scoped API key.
+      operationId: changeIso
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [iso_file]
+              properties:
+                iso_file:
+                  type: string
+                  description: Filename of the ISO to mount.
+                  example: ubuntu-24.04.1-live-server-amd64.iso
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/servers/{uuid}/actions/set_parameter:
+    post:
+      tags: [Server Actions]
+      summary: Set a server parameter
+      description: |
+        Changes an advanced parameter on the server (BIOS serial output,
+        boot menu, or default boot device). One parameter per call.
+        Requires a `write`-scoped API key.
+      operationId: setParameter
+      parameters:
+        - $ref: "#/components/parameters/ServerUuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [param, value]
+              properties:
+                param:
+                  type: string
+                  enum: [bios-serial, boot-menu, boot-device]
+                  description: |
+                    Parameter to change. Allowed params and their accepted values:
+                    - `bios-serial`: `yes` or `no`
+                    - `boot-menu`: `yes` or `no`
+                    - `boot-device`: `hd` or `cdrom`
+                  example: bios-serial
+                value:
+                  type: string
+                  description: Value to set for the chosen parameter (see `param` description for accepted values).
+                  example: "yes"
+      responses:
+        "202":
+          $ref: "#/components/responses/ActionQueued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/DispatchFailed"
+  /api/v1/dns_records:
+    get:
+      tags: [DNS Records]
+      summary: List DNS records
+      description: Returns all reverse DNS records visible to the authenticated key's account, with pagination.
+      operationId: listDnsRecords
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: A paginated list of DNS records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DnsRecordsList"
+              examples:
+                default:
+                  $ref: "#/components/examples/DnsRecordsListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    post:
+      tags: [DNS Records]
+      summary: Create a DNS record
+      description: |
+        Creates a reverse PTR record for an IP address owned by your account.
+
+        The API converts the given `ip_address` to its ARPA name automatically.
+        Validation errors are returned when:
+        - the IP is not owned by your account
+        - the IP is a reserved address (network, gateway, or broadcast)
+        - no DNS zone is configured for the IP
+        - a PTR record already exists for the IP
+      operationId: createDnsRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DnsRecordCreateRequest"
+            examples:
+              default:
+                $ref: "#/components/examples/DnsRecordCreateExample"
+      responses:
+        "201":
+          description: The DNS record was created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DnsRecordEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/dns_records/{id}:
+    patch:
+      tags: [DNS Records]
+      summary: Update a DNS record
+      description: Updates the hostname (PTR target) of an existing DNS record owned by your account.
+      operationId: updateDnsRecord
+      parameters:
+        - $ref: "#/components/parameters/DnsRecordId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DnsRecordUpdateRequest"
+            examples:
+              default:
+                $ref: "#/components/examples/DnsRecordUpdateExample"
+      responses:
+        "200":
+          description: The updated DNS record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DnsRecordEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    delete:
+      tags: [DNS Records]
+      summary: Delete a DNS record
+      description: Deletes an existing DNS record owned by your account.
+      operationId: deleteDnsRecord
+      parameters:
+        - $ref: "#/components/parameters/DnsRecordId"
+      responses:
+        "204":
+          description: The DNS record was deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/ssh_keys:
+    get:
+      tags: [SSH Keys]
+      summary: List SSH keys
+      description: Returns all SSH public keys belonging to the authenticated user.
+      operationId: listSshKeys
+      responses:
+        "200":
+          description: A list of SSH keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SshKeysList"
+              examples:
+                default:
+                  $ref: "#/components/examples/SshKeysListExample"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    post:
+      tags: [SSH Keys]
+      summary: Create an SSH key
+      description: |
+        Adds a new SSH public key to the authenticated user's account.
+        The key must be a valid OpenSSH public key. A username is required: it must
+        contain only letters, numbers, hyphens, and underscores, start with a letter
+        or underscore, and have no spaces. The username `root` is not allowed.
+      operationId: createSshKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SshKeyCreateRequest"
+            examples:
+              default:
+                $ref: "#/components/examples/SshKeyCreateExample"
+      responses:
+        "201":
+          description: The SSH key was created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SshKeyEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/ssh_keys/{id}:
+    delete:
+      tags: [SSH Keys]
+      summary: Delete an SSH key
+      description: Removes an SSH public key from the authenticated user's account.
+      operationId: deleteSshKey
+      parameters:
+        - $ref: "#/components/parameters/SshKeyId"
+      responses:
+        "204":
+          description: The SSH key was deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: arp_live_<random>
+      description: |
+        Bearer token created in your [dashboard](https://phoenix.arpnetworks.com). Treat tokens as secrets.
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number (1-indexed).
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Items per page. Defaults to 50, capped at 100.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    ServerUuid:
+      name: uuid
+      in: path
+      description: The server's UUID.
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: bf70fc0d-1dad-4099-97f3-53ef3ec0835d
+    DnsRecordId:
+      name: id
+      in: path
+      description: The DNS record's integer primary key.
+      required: true
+      schema:
+        type: integer
+      example: 42
+    SshKeyId:
+      name: id
+      in: path
+      description: The SSH key's integer primary key.
+      required: true
+      schema:
+        type: integer
+      example: 7
+  schemas:
+    Server:
+      type: object
+      required:
+        - uuid
+        - label
+        - state
+        - billing_mode
+        - os_template
+        - plan
+        - specs
+        - created_at
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          description: Stable identifier. Use this in all API URLs.
+        label:
+          type: string
+          description: Name shown in your dashboard.
+        state:
+          type: string
+          description: Power state of the server.
+          enum: [running, shutoff, paused, crashed, unknown]
+        provisioning_status:
+          type:
+            - string
+            - "null"
+          description: Provisioning lifecycle status (e.g. `active`, `pending`).
+        billing_mode:
+          type: string
+          description: How the server is billed.
+          enum: [reserved, on-demand]
+        billing_interval:
+          type:
+            - string
+            - "null"
+          description: Billing cycle (e.g. `monthly`, `semi-annual`, `annual`).
+        os_template:
+          type:
+            - string
+            - "null"
+          description: OS template the server was provisioned with.
+        location:
+          type:
+            - string
+            - "null"
+          description: Location code (e.g. `lax`).
+        plan:
+          type: string
+          description: Plan name the server runs on.
+        specs:
+          type: array
+          description: Resource specs for the plan (CPU, RAM, Storage, etc.).
+          items:
+            type: object
+            required: [name, quantity, unit]
+            properties:
+              name:
+                type: string
+                description: Resource type name (e.g. CPU, RAM, Storage).
+              quantity:
+                type: number
+                description: Amount of the resource.
+              unit:
+                type:
+                  - string
+                  - "null"
+                description: Unit of measurement (e.g. GB, core).
+        primary_ipv4:
+          type:
+            - string
+            - "null"
+          format: ipv4
+          description: Primary IPv4 address on the server's main interface.
+        primary_ipv6:
+          type:
+            - string
+            - "null"
+          format: ipv6
+          description: Primary IPv6 address on the server's main interface.
+        ip_space:
+          type:
+            - string
+            - "null"
+          description: IP block classification for the primary interface.
+          enum: [Reserved, Shared, null]
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 UTC timestamp of when the server was created.
+    ServerCreateRequest:
+      type: object
+      required: [server]
+      properties:
+        server:
+          type: object
+          required: [plan_id, os_template, location]
+          properties:
+            plan_id:
+              type: integer
+              description: Numeric `id` of the plan to provision (from `GET /api/v1/plans`).
+            os_template:
+              type: string
+              description: OS template code to install. See `GET /api/v1/os_templates` for available options.
+              example: ubuntu-24.04-amd64
+            location:
+              type: string
+              description: Location code where the server will be provisioned. See `GET /api/v1/locations` for available options.
+              example: LAX
+            ssh_key_ids:
+              type: array
+              description: >-
+                Optional list of SSH key IDs to install on the server. Keys must belong to the authenticated user.
+                See `GET /api/v1/ssh_keys`. If omitted or empty, no user accounts are created on the server, and
+                logging in will not be possible without manual operator intervention.
+              items:
+                type: integer
+            ipv4_address:
+              type: string
+              format: ipv4
+              description: Optional specific IPv4 address to assign. Must be available within your account's IP space.
+    ServersList:
+      type: object
+      required: [servers, meta]
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Server"
+        meta:
+          $ref: "#/components/schemas/Meta"
+    Meta:
+      type: object
+      required: [pagination]
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    Pagination:
+      type: object
+      required:
+        - page
+        - per_page
+        - previous_page
+        - next_page
+        - last_page
+        - total_entries
+      properties:
+        page:
+          type: integer
+          description: Current page number.
+        per_page:
+          type: integer
+          description: Items per page for this response.
+        previous_page:
+          type:
+            - integer
+            - "null"
+          description: Previous page number, or `null` if on the first page.
+        next_page:
+          type:
+            - integer
+            - "null"
+          description: Next page number, or `null` if on the last page.
+        last_page:
+          type: integer
+          description: Index of the final page.
+        total_entries:
+          type: integer
+          description: Total number of items across all pages.
+    SshHostKey:
+      type: object
+      required: [type, fingerprint]
+      properties:
+        type:
+          type: string
+          description: Key algorithm (e.g. `ED25519`, `RSA`, `ECDSA`, `DSA`).
+          example: ED25519
+        fingerprint:
+          type: string
+          description: SHA-256 fingerprint in `SHA256:<base64>` format, matching `ssh-keygen -l` output.
+          example: "SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"
+    SshHostKeysList:
+      type: object
+      required: [ssh_host_keys]
+      properties:
+        ssh_host_keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/SshHostKey"
+    Location:
+      type: object
+      required: [code, name, display_name]
+      properties:
+        code:
+          type: string
+          description: Location identifier (e.g. `LAX`).
+          example: LAX
+        name:
+          type: string
+          description: Full location name (e.g. `Los Angeles`).
+          example: Los Angeles
+        display_name:
+          type: string
+          description: Combined display name in the format `Name (CODE)`.
+          example: "Los Angeles (LAX)"
+        country:
+          type:
+            - string
+            - "null"
+          description: ISO 3166-1 alpha-2 country code, or `null` if not set.
+          example: US
+    LocationsList:
+      type: object
+      required: [locations]
+      properties:
+        locations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Location"
+          description: Locations available for ordering new servers, sorted by name.
+    IsosList:
+      type: object
+      required: [isos]
+      properties:
+        isos:
+          type: array
+          items:
+            type: string
+          description: Filenames of currently available ISO images.
+    OsTemplatesList:
+      type: object
+      required: [os_templates]
+      properties:
+        os_templates:
+          type: object
+          description: OS template families indexed by family key (e.g. `ubuntu`, `debian`).
+          additionalProperties:
+            $ref: "#/components/schemas/OsTemplateFamily"
+    OsTemplateFamily:
+      type: object
+      required: [title, logo, series]
+      properties:
+        title:
+          type: string
+          description: Display name for the OS family.
+        logo:
+          type: string
+          description: Relative path to the OS family logo.
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/OsTemplateSeries"
+    OsTemplateSeries:
+      type: object
+      required: [title, version, code]
+      properties:
+        title:
+          type: string
+          description: Display name for this template.
+        version:
+          type: string
+          description: Version label (e.g. `24.04 LTS`).
+        code:
+          type: string
+          description: Unique code used to reference this template at order time.
+    DnsRecord:
+      type: object
+      required: [id, name, type, content, domain]
+      properties:
+        id:
+          type: integer
+          description: Integer primary key of the record.
+        name:
+          type: string
+          description: ARPA name (e.g. `2.0.0.10.in-addr.arpa`).
+        type:
+          type: string
+          description: DNS record type (e.g. `PTR`).
+        content:
+          type: string
+          description: PTR target hostname (fully qualified, ending in a dot).
+        domain:
+          type:
+            - string
+            - "null"
+          description: Name of the DNS zone this record belongs to.
+    DnsRecordEnvelope:
+      type: object
+      required: [dns_record]
+      properties:
+        dns_record:
+          $ref: "#/components/schemas/DnsRecord"
+    DnsRecordsList:
+      type: object
+      required: [dns_records, meta]
+      properties:
+        dns_records:
+          type: array
+          items:
+            $ref: "#/components/schemas/DnsRecord"
+        meta:
+          $ref: "#/components/schemas/Meta"
+    DnsRecordCreateRequest:
+      type: object
+      required: [dns_record]
+      properties:
+        dns_record:
+          type: object
+          required: [ip_address, hostname]
+          properties:
+            ip_address:
+              type: string
+              description: IP address for which to create a PTR record. Must be owned by your account.
+              example: "10.0.0.2"
+            hostname:
+              type: string
+              description: PTR target hostname (trailing dot is added automatically if omitted).
+              example: "server.example.com"
+            record_type:
+              type: string
+              description: Record type. Defaults to `PTR`.
+              default: PTR
+              enum: [PTR]
+    DnsRecordUpdateRequest:
+      type: object
+      required: [dns_record]
+      properties:
+        dns_record:
+          type: object
+          required: [hostname]
+          properties:
+            hostname:
+              type: string
+              description: New PTR target hostname (trailing dot is added automatically if omitted).
+              example: "renamed.example.com"
+    ActionQueued:
+      type: object
+      required: [status, action]
+      properties:
+        status:
+          type: string
+          enum: [queued]
+        action:
+          type: string
+          enum: [boot, shutdown, poweroff, reset, change_iso, set_parameter]
+    BillingLineItem:
+      type: object
+      required: [label, product_code, quantity, unit_price, amount]
+      properties:
+        label:
+          type: string
+          description: Description of the billed item (e.g. VPS-1G).
+        product_code:
+          type:
+            - string
+            - "null"
+          description: Product code for the billed item, or `null` if none applies.
+        quantity:
+          type: number
+          description: Number of units.
+        unit_price:
+          type: number
+          description: Price per unit for the current billing interval.
+        amount:
+          type: number
+          description: Total charge for this line item (unit_price * quantity).
+    ServerBilling:
+      type: object
+      required: [billing_mode, interval, line_items, total]
+      properties:
+        billing_mode:
+          type: string
+          description: How the server is billed.
+          enum: [reserved, on-demand]
+        interval:
+          type: string
+          description: Billing period. `hourly` for on-demand servers; `monthly`, `semi-annual`, or `annual` for reserved.
+          enum: [hourly, monthly, semi-annual, annual]
+        line_items:
+          type: array
+          description: Individual charges that make up the total.
+          items:
+            $ref: "#/components/schemas/BillingLineItem"
+        total:
+          type: number
+          description: Sum of all line item amounts for the current billing interval.
+        free:
+          type: boolean
+          description: Present and `true` when the server has a zero price override.
+        est_monthly:
+          type: number
+          description: On-demand only. Projected monthly cost at the current hourly rate.
+        uninvoiced_hours:
+          type: number
+          description: On-demand only. Hours in the current open usage record not yet invoiced.
+        uninvoiced_amount:
+          type: number
+          description: On-demand only. Charges accrued in the current open usage record.
+    Bandwidth:
+      type: object
+      required: [range, inbound_bytes, outbound_bytes, total_bytes]
+      properties:
+        range:
+          type: string
+          enum: [1h, 6h, 24h, 7d, 30d]
+          description: The time range these figures cover.
+        inbound_bytes:
+          type:
+            - number
+            - "null"
+          description: Total inbound transfer in bytes, or `null` if unavailable.
+        outbound_bytes:
+          type:
+            - number
+            - "null"
+          description: Total outbound transfer in bytes, or `null` if unavailable.
+        total_bytes:
+          type: number
+          description: Sum of inbound and outbound bytes (0 when both are `null`).
+    PlanSpec:
+      type: object
+      required: [name, quantity, unit]
+      properties:
+        name:
+          type: string
+          description: Resource type name (e.g. CPU, RAM, Storage).
+        quantity:
+          type: integer
+          description: Amount of the resource.
+        unit:
+          type: string
+          description: Unit for the resource quantity (e.g. core, GB).
+    Plan:
+      type: object
+      required: [id, code, name, description, specs, prices]
+      properties:
+        id:
+          type: integer
+          description: Integer primary key of the plan.
+        code:
+          type: string
+          description: Plan code (e.g. `vps_basic`).
+        name:
+          type: string
+          description: Plan name (e.g. VPS-1G).
+        description:
+          type:
+            - string
+            - "null"
+          description: Optional marketing description of the plan.
+        specs:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanSpec"
+          description: Resource specs included in this plan.
+        prices:
+          type: object
+          additionalProperties:
+            type: number
+          description: |
+            Prices available for this plan under the account's pricing tier.
+            Keys are billing intervals (`hourly`, `monthly`); values are prices
+            in USD. Only intervals with an available price are included.
+    PlansList:
+      type: object
+      required: [plans]
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/Plan"
+    SshKey:
+      type: object
+      required: [id, name, key, username, key_type, fingerprint_sha256, created_at]
+      properties:
+        id:
+          type: integer
+          description: Primary key of the SSH key.
+        name:
+          type: string
+          description: Label for this key (e.g. Laptop).
+        key:
+          type: string
+          description: Full OpenSSH public key string.
+        username:
+          type:
+            - string
+            - "null"
+          description: System username this key is associated with.
+        key_type:
+          type: string
+          description: Key algorithm (e.g. `ssh-ed25519`, `ssh-rsa`).
+        fingerprint_sha256:
+          type: string
+          description: SHA-256 fingerprint in `SHA256:<base64>` format.
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 UTC timestamp of when the key was added.
+    SshKeyEnvelope:
+      type: object
+      required: [ssh_key]
+      properties:
+        ssh_key:
+          $ref: "#/components/schemas/SshKey"
+    SshKeysList:
+      type: object
+      required: [ssh_keys]
+      properties:
+        ssh_keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/SshKey"
+    SshKeyCreateRequest:
+      type: object
+      required: [ssh_key]
+      properties:
+        ssh_key:
+          type: object
+          required: [name, key, username]
+          properties:
+            name:
+              type: string
+              description: Label for this key (e.g. Laptop).
+              example: Laptop
+            key:
+              type: string
+              description: Full OpenSSH public key string.
+              example: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1dWlq8j1RWFHOF0GzqHE/pMQfRBGKcLmM+6Kl5RVbC user@host"
+            username:
+              type: string
+              description: >-
+                System username to associate with this key. Required. Must contain
+                only letters, numbers, hyphens, and underscores, start with a letter
+                or underscore, and have no spaces. The username `root` is not allowed.
+              example: deploy
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [type, message]
+          properties:
+            type:
+              type: string
+              enum:
+                - unauthorized
+                - forbidden
+                - insufficient_scope
+                - not_found
+                - invalid_range
+                - unprocessable
+                - invalid_iso_file
+                - invalid_parameter
+                - payment_method_required
+                - rate_limited
+                - dispatch_failed
+              description: Error category, for programmatic handling -- see the enum values.
+            message:
+              type: string
+              description: Description of what went wrong.
+  examples:
+    PlansListExample:
+      summary: Two plans
+      value:
+        plans:
+          - id: 1
+            code: vps_basic
+            name: VPS-1G
+            description: Entry-level virtual server
+            specs:
+              - name: CPU
+                quantity: 1
+                unit: core
+              - name: RAM
+                quantity: 1
+                unit: GB
+              - name: Storage
+                quantity: 20
+                unit: GB
+            prices:
+              monthly: 10.0
+              hourly: 0.015
+          - id: 2
+            code: vps_pro
+            name: VPS-4G
+            description: Mid-range virtual server
+            specs:
+              - name: CPU
+                quantity: 2
+                unit: core
+              - name: RAM
+                quantity: 4
+                unit: GB
+              - name: Storage
+                quantity: 60
+                unit: GB
+            prices:
+              monthly: 30.0
+              hourly: 0.045
+    LocationsListExample:
+      summary: A list of locations
+      value:
+        locations:
+          - code: FRA
+            name: Frankfurt
+            display_name: "Frankfurt (FRA)"
+            country: DE
+          - code: LAX
+            name: Los Angeles
+            display_name: "Los Angeles (LAX)"
+            country: US
+    ServerCreateExample:
+      summary: Provision a VPS with an SSH key
+      value:
+        server:
+          plan_id: 1
+          os_template: ubuntu-24.04-amd64
+          location: LAX
+          ssh_key_ids: [42]
+    IsosListExample:
+      summary: A list of available ISOs
+      value:
+        isos:
+          - ubuntu-26.04-amd64.iso
+          - debian-13-amd64.iso
+          - freebsd-15.1-amd64-zfs.iso
+    OsTemplatesListExample:
+      summary: A list of available OS templates
+      value:
+        os_templates:
+          ubuntu:
+            title: Ubuntu Linux
+            logo: os/ubuntu.svg
+            series:
+              - title: Ubuntu Linux
+                version: "24.04 LTS"
+                code: ubuntu-24.04-amd64
+          debian:
+            title: Debian GNU/Linux
+            logo: os/debian.svg
+            series:
+              - title: Debian GNU/Linux
+                version: "12.5"
+                code: debian-12.5-amd64
+    DnsRecordsListExample:
+      summary: A single-record list
+      value:
+        dns_records:
+          - id: 42
+            name: 2.0.0.10.in-addr.arpa
+            type: PTR
+            content: server.example.com.
+            domain: 0.0.10.in-addr.arpa
+        meta:
+          pagination:
+            page: 1
+            per_page: 50
+            previous_page: null
+            next_page: null
+            last_page: 1
+            total_entries: 1
+    DnsRecordCreateExample:
+      summary: Create a PTR record
+      value:
+        dns_record:
+          ip_address: "10.0.0.2"
+          hostname: "server.example.com"
+    DnsRecordUpdateExample:
+      summary: Update a PTR hostname
+      value:
+        dns_record:
+          hostname: "renamed.example.com"
+    ServersListExample:
+      summary: A single-server list
+      value:
+        servers:
+          - uuid: bf70fc0d-1dad-4099-97f3-53ef3ec0835d
+            label: web-01
+            state: running
+            provisioning_status: active
+            billing_mode: reserved
+            billing_interval: monthly
+            os_template: freebsd-15.0-amd64
+            location: lax
+            plan: VPS-1G
+            specs:
+              - name: CPU
+                quantity: 1
+                unit: core
+              - name: RAM
+                quantity: 1
+                unit: GB
+              - name: Storage
+                quantity: 20
+                unit: GB
+            primary_ipv4: 198.51.100.20
+            primary_ipv6: "2001:db8::20"
+            ip_space: Reserved
+            created_at: "2025-03-14T18:22:41Z"
+        meta:
+          pagination:
+            page: 1
+            per_page: 50
+            previous_page: null
+            next_page: null
+            last_page: 1
+            total_entries: 1
+    SshHostKeysListExample:
+      summary: Two SSH host keys
+      value:
+        ssh_host_keys:
+          - type: ED25519
+            fingerprint: "SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"
+          - type: RSA
+            fingerprint: "SHA256:3mGOVs0mw+G2xbDFjsFCE2HA/hJNiM7sKKTvmQGJoiw"
+    ServerShowExample:
+      summary: A single server
+      value:
+        server:
+          uuid: 30f8d288-c017-4c0c-9881-5ddc07abd294
+          label: db-01
+          state: running
+          provisioning_status: active
+          billing_mode: reserved
+          billing_interval: monthly
+          os_template: debian-13-amd64
+          location: lax
+          plan: VPS-1G
+          specs:
+            - name: CPU
+              quantity: 1
+              unit: core
+            - name: RAM
+              quantity: 1
+              unit: GB
+            - name: Storage
+              quantity: 20
+              unit: GB
+          primary_ipv4: 198.51.100.20
+          primary_ipv6: "2001:db8::20"
+          ip_space: Reserved
+          created_at: "2025-03-14T18:22:41Z"
+    BillingReservedExample:
+      summary: Reserved (monthly) billing breakdown
+      value:
+        billing:
+          billing_mode: reserved
+          interval: monthly
+          line_items:
+            - label: VPS-1G
+              product_code: vps-1g
+              quantity: 1
+              unit_price: 10.00
+              amount: 10.00
+          total: 10.00
+    BillingFreeExample:
+      summary: Reserved server with a zero price override (free)
+      value:
+        billing:
+          billing_mode: reserved
+          interval: monthly
+          line_items:
+            - label: VPS-1G
+              product_code: vps-1g
+              quantity: 1
+              unit_price: 0.00
+              amount: 0.00
+          total: 0.00
+          free: true
+    BillingOnDemandExample:
+      summary: On-demand (hourly) billing breakdown
+      value:
+        billing:
+          billing_mode: on-demand
+          interval: hourly
+          line_items:
+            - label: VPS-1G
+              product_code: vps-1g
+              quantity: 1
+              unit_price: 0.0137
+              amount: 0.0137
+          total: 0.0137
+          est_monthly: 10.00
+          uninvoiced_hours: 72
+          uninvoiced_amount: 0.99
+    BandwidthExample:
+      summary: 30-day bandwidth summary
+      value:
+        bandwidth:
+          range: 30d
+          inbound_bytes: 1234567.89
+          outbound_bytes: 9876543.21
+          total_bytes: 11111111.1
+    SshKeysListExample:
+      summary: Two SSH keys
+      value:
+        ssh_keys:
+          - id: 1
+            name: Laptop
+            key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1dWlq8j1RWFHOF0GzqHE/pMQfRBGKcLmM+6Kl5RVbC user@host"
+            username: deploy
+            key_type: ssh-ed25519
+            fingerprint_sha256: "SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"
+            created_at: "2025-03-14T18:22:41Z"
+          - id: 2
+            name: Desktop
+            key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7kj5RD5Y7q5n7QN4W4xT user@desktop"
+            username: null
+            key_type: ssh-rsa
+            fingerprint_sha256: "SHA256:3mGOVs0mw+G2xbDFjsFCE2HA/hJNiM7sKKTvmQGJoiw"
+            created_at: "2025-03-13T10:15:00Z"
+    SshKeyCreateExample:
+      summary: Add a new SSH key
+      value:
+        ssh_key:
+          name: Laptop
+          key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1dWlq8j1RWFHOF0GzqHE/pMQfRBGKcLmM+6Kl5RVbC user@host"
+          username: deploy
+  responses:
+    ActionQueued:
+      description: The action was accepted and queued for dispatch.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ActionQueued"
+          example:
+            status: queued
+            action: boot
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: unauthorized
+              message: Invalid or missing API key
+    Forbidden:
+      description: The key does not have the required scope or role.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: insufficient_scope
+              message: This API key does not have the 'write' scope
+    NotFound:
+      description: The resource does not exist or is not visible to this key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: not_found
+              message: Resource not found
+    UnprocessableContent:
+      description: The request was well-formed but validation failed (e.g. invalid ISO file, invalid parameter, or failed record validation).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: unprocessable
+              message: Validation failed
+    PaymentRequired:
+      description: A payment method must be on file before provisioning a server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: payment_method_required
+              message: A payment method is required to provision a server
+    RateLimited:
+      description: Request rate limit exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: rate_limited
+              message: Rate limit exceeded
+    DispatchFailed:
+      description: |
+        The action could not be dispatched to the underlying host. The
+        API server is healthy; retry after a short delay.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: dispatch_failed
+              message: Failed to dispatch power action

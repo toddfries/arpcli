@@ -23,6 +23,12 @@ my @modules = qw(
     ArpCLI::API::ServerActions
     ArpCLI::API::DnsRecords
     ArpCLI::API::SshKeys
+    ArpCLI::OpenAPI::Parser
+    ArpCLI::OpenAPI::Map
+    ArpCLI::OpenAPI::Manuals
+    ArpCLI::OpenAPI::Codegen
+    ArpCLI::OpenAPI::Sync
+    ArpCLI::OpenAPI::Registry
 );
 
 plan tests => scalar @modules;

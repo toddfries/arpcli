@@ -1,0 +1,314 @@
+[
+   {
+      "cli" : "servers boot <uuid>",
+      "http_method" : "POST",
+      "method" : "boot",
+      "module" : "ServerActions",
+      "operation_id" : "bootServer",
+      "path" : "/api/v1/servers/{uuid}/actions/boot",
+      "scope" : "write",
+      "summary" : "Boot a server",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : "servers change-iso <uuid> <iso_file>",
+      "http_method" : "POST",
+      "method" : "change_iso",
+      "module" : "ServerActions",
+      "operation_id" : "changeIso",
+      "path" : "/api/v1/servers/{uuid}/actions/change_iso",
+      "scope" : "write",
+      "summary" : "Change mounted ISO",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "POST",
+      "method" : "create",
+      "module" : "DnsRecords",
+      "operation_id" : "createDnsRecord",
+      "path" : "/api/v1/dns_records",
+      "scope" : "write",
+      "summary" : "Create a DNS record",
+      "tags" : [
+         "DNS Records"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "POST",
+      "method" : "create",
+      "module" : "Servers",
+      "operation_id" : "createServer",
+      "path" : "/api/v1/servers",
+      "scope" : "provision",
+      "summary" : "Create a server",
+      "tags" : [
+         "Servers"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "POST",
+      "method" : "create",
+      "module" : "SshKeys",
+      "operation_id" : "createSshKey",
+      "path" : "/api/v1/ssh_keys",
+      "scope" : "write",
+      "summary" : "Create an SSH key",
+      "tags" : [
+         "SSH Keys"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "DELETE",
+      "method" : "delete",
+      "module" : "DnsRecords",
+      "operation_id" : "deleteDnsRecord",
+      "path" : "/api/v1/dns_records/{id}",
+      "scope" : "write",
+      "summary" : "Delete a DNS record",
+      "tags" : [
+         "DNS Records"
+      ]
+   },
+   {
+      "cli" : "servers delete <uuid>",
+      "http_method" : "DELETE",
+      "method" : "delete",
+      "module" : "Servers",
+      "operation_id" : "deleteServer",
+      "path" : "/api/v1/servers/{uuid}",
+      "scope" : "write",
+      "summary" : "Delete a server",
+      "tags" : [
+         "Servers"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "DELETE",
+      "method" : "delete",
+      "module" : "SshKeys",
+      "operation_id" : "deleteSshKey",
+      "path" : "/api/v1/ssh_keys/{id}",
+      "scope" : "write",
+      "summary" : "Delete an SSH key",
+      "tags" : [
+         "SSH Keys"
+      ]
+   },
+   {
+      "cli" : "servers bandwidth <uuid>",
+      "http_method" : "GET",
+      "method" : "bandwidth",
+      "module" : "Servers",
+      "operation_id" : "getServerBandwidth",
+      "path" : "/api/v1/servers/{uuid}/bandwidth",
+      "scope" : "read",
+      "summary" : "Get server bandwidth",
+      "tags" : [
+         "Bandwidth"
+      ]
+   },
+   {
+      "cli" : "servers billing <uuid>",
+      "http_method" : "GET",
+      "method" : "billing",
+      "module" : "Servers",
+      "operation_id" : "getServerBilling",
+      "path" : "/api/v1/servers/{uuid}/billing",
+      "scope" : "read",
+      "summary" : "Get server billing breakdown",
+      "tags" : [
+         "Billing"
+      ]
+   },
+   {
+      "cli" : "dns-records list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "DnsRecords",
+      "operation_id" : "listDnsRecords",
+      "path" : "/api/v1/dns_records",
+      "scope" : "read",
+      "summary" : "List DNS records",
+      "tags" : [
+         "DNS Records"
+      ]
+   },
+   {
+      "cli" : "isos list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "Isos",
+      "operation_id" : "listIsos",
+      "path" : "/api/v1/isos",
+      "scope" : "read",
+      "summary" : "List available ISOs",
+      "tags" : [
+         "ISOs"
+      ]
+   },
+   {
+      "cli" : "locations list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "Locations",
+      "operation_id" : "listLocations",
+      "path" : "/api/v1/locations",
+      "scope" : "read",
+      "summary" : "List locations",
+      "tags" : [
+         "Locations"
+      ]
+   },
+   {
+      "cli" : "os-templates list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "OsTemplates",
+      "operation_id" : "listOsTemplates",
+      "path" : "/api/v1/os_templates",
+      "scope" : "read",
+      "summary" : "List available OS templates",
+      "tags" : [
+         "OS Templates"
+      ]
+   },
+   {
+      "cli" : "plans list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "Plans",
+      "operation_id" : "listPlans",
+      "path" : "/api/v1/plans",
+      "scope" : "read",
+      "summary" : "List plans",
+      "tags" : [
+         "Plans"
+      ]
+   },
+   {
+      "cli" : "servers list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "Servers",
+      "operation_id" : "listServers",
+      "path" : "/api/v1/servers",
+      "scope" : "read",
+      "summary" : "List servers",
+      "tags" : [
+         "Servers"
+      ]
+   },
+   {
+      "cli" : "servers ssh-host-keys <uuid>",
+      "http_method" : "GET",
+      "method" : "ssh_host_keys",
+      "module" : "Servers",
+      "operation_id" : "listSshHostKeys",
+      "path" : "/api/v1/servers/{uuid}/ssh_host_keys",
+      "scope" : "read",
+      "summary" : "List SSH host keys",
+      "tags" : [
+         "SSH Host Keys"
+      ]
+   },
+   {
+      "cli" : "ssh-keys list",
+      "http_method" : "GET",
+      "method" : "list",
+      "module" : "SshKeys",
+      "operation_id" : "listSshKeys",
+      "path" : "/api/v1/ssh_keys",
+      "scope" : "read",
+      "summary" : "List SSH keys",
+      "tags" : [
+         "SSH Keys"
+      ]
+   },
+   {
+      "cli" : "servers poweroff <uuid>",
+      "http_method" : "POST",
+      "method" : "poweroff",
+      "module" : "ServerActions",
+      "operation_id" : "powerOffServer",
+      "path" : "/api/v1/servers/{uuid}/actions/poweroff",
+      "scope" : "write",
+      "summary" : "Power off a server",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : "servers reset <uuid>",
+      "http_method" : "POST",
+      "method" : "reset",
+      "module" : "ServerActions",
+      "operation_id" : "resetServer",
+      "path" : "/api/v1/servers/{uuid}/actions/reset",
+      "scope" : "write",
+      "summary" : "Reset a server",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : "servers set-parameter <uuid> <param> <value>",
+      "http_method" : "POST",
+      "method" : "set_parameter",
+      "module" : "ServerActions",
+      "operation_id" : "setParameter",
+      "path" : "/api/v1/servers/{uuid}/actions/set_parameter",
+      "scope" : "write",
+      "summary" : "Set a server parameter",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : "servers show <uuid>",
+      "http_method" : "GET",
+      "method" : "show",
+      "module" : "Servers",
+      "operation_id" : "showServer",
+      "path" : "/api/v1/servers/{uuid}",
+      "scope" : "read",
+      "summary" : "Show a server",
+      "tags" : [
+         "Servers"
+      ]
+   },
+   {
+      "cli" : "servers shutdown <uuid>",
+      "http_method" : "POST",
+      "method" : "shutdown",
+      "module" : "ServerActions",
+      "operation_id" : "shutdownServer",
+      "path" : "/api/v1/servers/{uuid}/actions/shutdown",
+      "scope" : "write",
+      "summary" : "Shut down a server",
+      "tags" : [
+         "Server Actions"
+      ]
+   },
+   {
+      "cli" : null,
+      "http_method" : "PATCH",
+      "method" : "update",
+      "module" : "DnsRecords",
+      "operation_id" : "updateDnsRecord",
+      "path" : "/api/v1/dns_records/{id}",
+      "scope" : "write",
+      "summary" : "Update a DNS record",
+      "tags" : [
+         "DNS Records"
+      ]
+   }
+]

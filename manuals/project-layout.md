@@ -12,7 +12,9 @@ arpcli/
 │   └── API/*.pm            # One module per API resource
 ├── t/                      # Test::More suite + Test::MockHTTP
 ├── man/                    # OpenBSD mdoc (arpcli.1, arpcli.conf.5)
-├── manuals/                # AI token-saving topic docs
+├── manuals/                # AI token-saving topic docs (partially auto-generated)
+├── script/sync-openapi     # Pull OpenAPI spec; refresh manuals and registry
+├── spec/                   # openapi.yaml, endpoint-map.yaml, manifests
 └── future-options.md       # Next-session roadmap
 ```
 
