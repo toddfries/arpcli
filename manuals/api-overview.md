@@ -1,0 +1,31 @@
+# API overview
+
+- **Title:** Platform API v1.0.0
+- **Base URL:** `https://arpnetworks.com`
+- **Auth:** `Authorization: Bearer arp_live_<token>`
+- **Docs:** https://phoenix.arpnetworks.com/api/docs
+
+## Scopes (set at key creation, immutable)
+
+| Scope | Allows |
+|-------|--------|
+| `read` | GET |
+| `write` | server actions, DELETE server, DNS/SSH mutations; includes read |
+| `provision` | POST server create; includes write and read |
+
+## Rate limits
+
+- 120 req/min per client IP (pre-auth)
+- 60 req/min per API key (post-auth)
+- 429 → `error.type = rate_limited`
+- Server create: 7/min per account
+
+## Config mapping
+
+`~/.config/arpcli/conf`:
+
+```ini
+[api]
+base_url = https://arpnetworks.com
+api_key = <from dashboard>
+```

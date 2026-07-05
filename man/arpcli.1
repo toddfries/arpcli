@@ -1,0 +1,128 @@
+.Dd $Mdocdate: July 5 2026 $
+.Dt ARPCLI 1
+.Os
+.Sh NAME
+.Nm arpcli
+.Nd ARP Networks Platform API command-line client
+.Sh SYNOPSIS
+.Nm arpcli
+.Op Fl c Ar config
+.Ar command
+.Op Ar arguments ...
+.Sh DESCRIPTION
+The
+.Nm
+utility queries and manages resources exposed by the ARP Networks Platform API.
+It reads credentials from
+.Xr arpcli.conf 5
+unless
+.Fl c
+is given.
+.Pp
+The
+.Cm status
+command produces an outline-style account report with sysctl-like
+key=value lines for each server, fixed-width summary tables, and catalog
+listings for locations, plans, ISOs, and OS templates.
+.Sh READ COMMANDS
+.Bl -tag -width Ds
+.It Cm status Op Fl -range Ar 30d
+Discover all readable account services and emit a consolidated report.
+The default bandwidth range is
+.Ar 30d .
+.It Cm servers Cm list
+List servers in a fixed-width table.
+.It Cm servers Cm show Ar uuid
+Show one server as sysctl-style key=value lines.
+.It Cm servers Cm bandwidth Ar uuid Op Fl -range Ar range
+Show bandwidth counters for a server.
+The default range is
+.Ar 30d .
+Valid ranges are
+.Ar 1h ,
+.Ar 6h ,
+.Ar 24h ,
+.Ar 7d ,
+and
+.Ar 30d .
+.It Cm servers Cm billing Ar uuid
+Show billing breakdown as JSON.
+.It Cm servers Cm ssh-host-keys Ar uuid
+List SSH host key fingerprints for a server.
+.It Cm locations Cm list
+List data center locations.
+.It Cm plans Cm list
+List VPS plans available to the account.
+.It Cm isos Cm list
+List mountable ISO images.
+.It Cm os-templates Cm list
+List OS template codes.
+.It Cm dns-records Cm list
+List reverse DNS (PTR) records.
+.It Cm ssh-keys Cm list
+List account SSH public keys.
+.El
+.Sh WRITE COMMANDS
+Write commands require a
+.Cm write
+-scoped API key.
+.Bl -tag -width Ds
+.It Cm servers Cm delete Ar uuid
+Delete a server.
+.It Cm servers Cm boot Ar uuid
+Queue a boot (power on) action.
+.It Cm servers Cm shutdown Ar uuid
+Queue a graceful ACPI shutdown.
+.It Cm servers Cm poweroff Ar uuid
+Queue a forced power off.
+.It Cm servers Cm reset Ar uuid
+Queue a hard reset.
+.It Cm servers Cm change-iso Ar uuid Ar iso_file
+Mount a different ISO image.
+.It Cm servers Cm set-parameter Ar uuid Ar param Ar value
+Change an advanced server parameter.
+.Ar param
+must be one of
+.Cm bios-serial ,
+.Cm boot-menu ,
+or
+.Cm boot-device .
+.El
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl c Ar path
+Use
+.Ar path
+instead of the default configuration file.
+.It Fl h
+Show usage and exit.
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa ~/.config/arpcli/conf
+Default configuration file.
+See
+.Xr arpcli.conf 5 .
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+Discover the current account:
+.Bd -literal -offset indent
+arpcli status
+.Ed
+.Pp
+List servers:
+.Bd -literal -offset indent
+arpcli servers list
+.Ed
+.Pp
+Show 30-day bandwidth for a server:
+.Bd -literal -offset indent
+arpcli servers bandwidth bf70fc0d-1dad-4099-97f3-53ef3ec0835d
+.Ed
+.Sh SEE ALSO
+.Xr arpcli.conf 5 ,
+.Lk https://phoenix.arpnetworks.com/api/docs
+.Sh AUTHORS
+Todd

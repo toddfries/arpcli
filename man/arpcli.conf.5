@@ -1,0 +1,55 @@
+.Dd $Mdocdate: July 5 2026 $
+.Dt ARPCLI.CONF 5
+.Os
+.Sh NAME
+.Nm arpcli.conf
+.Nd arpcli configuration file
+.Sh SYNOPSIS
+.Pa ~/.config/arpcli/conf
+.Sh DESCRIPTION
+The
+.Nm
+file supplies connection settings for
+.Xr arpcli 1 .
+The file uses INI syntax with a single
+.Va [api]
+section.
+.Pp
+The configuration directory should be mode 0700 and the file mode 0600 because
+it contains a secret API key.
+.Sh SYNTAX
+.Bl -tag -width Ds
+.It Va [api]
+API connection settings.
+.It Va base_url
+Base URL for API requests.
+The default is
+.Lk https://arpnetworks.com .
+Trailing slashes are removed.
+.It Va api_key
+Bearer token created in the ARP Networks dashboard under API Keys.
+Required.
+.El
+.Pp
+Lines beginning with
+.Ql #
+or
+.Ql ;
+are comments.
+Inline comments after values are not supported.
+.Sh EXAMPLE
+.Bd -literal -offset indent
+[api]
+base_url = https://arpnetworks.com
+api_key = arp_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+.Ed
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa ~/.config/arpcli/conf
+Default location.
+.El
+.Sh SEE ALSO
+.Xr arpcli 1 ,
+.Lk https://phoenix.arpnetworks.com/api/docs
+.Sh AUTHORS
+Todd

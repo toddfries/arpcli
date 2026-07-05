@@ -1,0 +1,159 @@
+package ArpCLI::HTTP;
+
+use strict;
+use warnings;
+
+use JSON::PP ();
+use ArpCLI::Error;
+use ArpCLI::Util qw(redact_secrets redact_headers);
+
+sub new {
+    my ($class, %args) = @_;
+    my $self = bless {
+        base_url => $args{base_url},
+        api_key  => $args{api_key},
+        agent    => $args{agent},
+        timeout  => $args{timeout} // 60,
+    }, $class;
+    return $self;
+}
+
+sub request {
+    my ($self, $method, $path, %args) = @_;
+
+    $path = '/' . $path unless $path =~ m{\A/};
+    my $url = $self->{base_url} . $path;
+
+    if (my $query = $args{query}) {
+        require URI;
+        require URI::QueryParam;
+        my $uri = URI->new($url);
+        for my $key (sort keys %$query) {
+            next unless defined $query->{$key};
+            $uri->query_param_append($key, $query->{$key});
+        }
+        $url = "$uri";
+    }
+
+    my %headers = (
+        Authorization => 'Bearer ' . $self->{api_key},
+        Accept        => 'application/json',
+        'Content-Type' => 'application/json',
+    );
+
+    my $content;
+    if (exists $args{body}) {
+        $content = JSON::PP->new->utf8->encode($args{body});
+    }
+
+    $self->_debug_log($method, $url, \%headers, $content);
+
+    my $response = $self->_agent->request(
+        $method,
+        $url,
+        {
+            headers => \%headers,
+            (defined $content ? (content => $content) : ()),
+            timeout => $self->{timeout},
+        },
+    );
+
+    $self->_debug_log_response($method, $url, $response);
+    return $self->_parse_response($method, $path, $response);
+}
+
+sub get    { shift->request('GET',    @_) }
+sub post   { shift->request('POST',   @_) }
+sub patch  { shift->request('PATCH',  @_) }
+sub delete { shift->request('DELETE', @_) }
+
+sub _debug_enabled {
+    my $env = $ENV{ARPCLI_DEBUG} // '';
+    return $env ne '' && $env ne '0';
+}
+
+sub _debug_log {
+    my ($self, $method, $url, $headers, $content) = @_;
+    return unless _debug_enabled();
+    my $safe_headers = redact_headers($headers);
+    my $line = sprintf(
+        'arpcli debug request: %s %s headers=%s',
+        $method,
+        $url,
+        redact_secrets(JSON::PP->new->utf8->encode($safe_headers)),
+    );
+    $line .= ' body=' . redact_secrets($content) if defined $content;
+    warn "$line\n";
+    return;
+}
+
+sub _debug_log_response {
+    my ($self, $method, $url, $response) = @_;
+    return unless _debug_enabled();
+    my $status = $response->{status} // 0;
+    my $body   = $response->{content} // '';
+    warn sprintf(
+        "arpcli debug response: %s %s status=%d body=%s\n",
+        $method,
+        $url,
+        $status,
+        redact_secrets($body),
+    );
+    return;
+}
+
+sub _agent {
+    my ($self) = @_;
+    return $self->{agent} if $self->{agent};
+    require HTTP::Tiny;
+    $self->{agent} = HTTP::Tiny->new(
+        agent      => 'arpcli/' . ($ArpCLI::VERSION // '0'),
+        verify_SSL => 1,
+    );
+    return $self->{agent};
+}
+
+sub _parse_response {
+    my ($self, $method, $path, $response) = @_;
+    my $status = $response->{status} // 0;
+    my $body   = $response->{content} // '';
+    my $data;
+
+    if (length $body) {
+        eval {
+            $data = JSON::PP->new->utf8->decode($body);
+        };
+        if ($@) {
+            die ArpCLI::Error->new(
+                type    => 'invalid_json',
+                message => "invalid JSON from $method $path",
+                status  => $status,
+                body    => $body,
+            );
+        }
+    }
+
+    if ($status >= 200 && $status < 300) {
+        return {
+            status => $status,
+            data   => $data,
+            raw    => $body,
+        };
+    }
+
+    my $type    = 'http_error';
+    my $message = "HTTP $status for $method $path";
+    if (ref $data eq 'HASH' && ref $data->{error} eq 'HASH') {
+        $type    = $data->{error}{type}    // $type;
+        $message = $data->{error}{message} // $message;
+    }
+
+    die ArpCLI::Error->new(
+        type    => $type,
+        message => $message,
+        status  => $status,
+        body    => $data // $body,
+    );
+}
+
+1;

@@ -1,0 +1,325 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
+use ArpCLI::Client;
+use ArpCLI::Error;
+use ArpCLI::Output;
+use ArpCLI::Util qw(is_uuid flatten_os_templates format_specs format_bytes);
+
+sub usage {
+    print <<'USAGE';
+usage: arpcli [-c config] <command> [arguments]
+
+read commands:
+  status [--range 30d]              discover account services (outline report)
+  servers list                      list servers
+  servers show <uuid>               show one server
+  servers bandwidth <uuid> [--range 30d]
+  servers billing <uuid>            billing breakdown (JSON)
+  servers ssh-host-keys <uuid>      SSH host key fingerprints
+  locations list                    list data center locations
+  plans list                        list VPS plans
+  isos list                         list mountable ISO images
+  os-templates list                 list OS template codes
+  dns-records list                  list reverse DNS (PTR) records
+  ssh-keys list                     list account SSH public keys
+
+write commands (require write-scoped API key):
+  servers delete <uuid>
+  servers boot <uuid>
+  servers shutdown <uuid>
+  servers poweroff <uuid>
+  servers reset <uuid>
+  servers change-iso <uuid> <iso_file>
+  servers set-parameter <uuid> <param> <value>
+
+options:
+  -c path    configuration file (default: ~/.config/arpcli/conf)
+  -h         show this help
+USAGE
+    exit ($ENV{__ARPCLI_TEST_EXIT} // 0);
+}
+
+sub main {
+    my @args = @ARGV;
+    my $config_path;
+    while (@args && $args[0] =~ /^-/) {
+        my $opt = shift @args;
+        if ($opt eq '-h' || $opt eq '--help') {
+            usage();
+        }
+        elsif ($opt eq '-c') {
+            die "arpcli: -c requires a path\n" unless @args;
+            $config_path = shift @args;
+        }
+        else {
+            die "arpcli: unknown option: $opt\n";
+        }
+    }
+
+    usage() unless @args;
+    my $command = shift @args;
+
+    my $client = ArpCLI::Client->new(
+        defined $config_path ? (config_path => $config_path) : (),
+    );
+
+    if ($command eq 'status') {
+        my $range = '30d';
+        while (@args) {
+            my $arg = shift @args;
+            if ($arg eq '--range') {
+                die "arpcli: --range requires a value\n" unless @args;
+                $range = shift @args;
+            }
+            else {
+                die "arpcli: unknown status option: $arg\n";
+            }
+        }
+        my $data = $client->discover(bandwidth_range => $range);
+        ArpCLI::Output->new->print_discovery($data);
+        return 0;
+    }
+
+    return run_resource($client, $command, @args);
+}
+
+sub run_resource {
+    my ($client, $command, @args) = @_;
+
+    if ($command eq 'servers') {
+        return cmd_servers($client, @args);
+    }
+    if ($command eq 'locations') {
+        return cmd_simple_list($client->locations->list, @args);
+    }
+    if ($command eq 'plans') {
+        return cmd_plans($client, @args);
+    }
+    if ($command eq 'isos') {
+        return cmd_isos($client, @args);
+    }
+    if ($command eq 'os-templates') {
+        return cmd_os_templates($client, @args);
+    }
+    if ($command eq 'dns-records') {
+        return cmd_dns_records($client, @args);
+    }
+    if ($command eq 'ssh-keys') {
+        return cmd_ssh_keys($client, @args);
+    }
+
+    die "arpcli: unknown command: $command\n";
+}
+
+sub cmd_servers {
+    my ($client, @args) = @_;
+    die "arpcli: servers requires a subcommand\n" unless @args;
+    my $sub = shift @args;
+
+    if ($sub eq 'list') {
+        my $servers = $client->servers->list;
+        print_table([qw(LABEL UUID STATE PLAN IPv4)], $servers, sub {
+            my ($s) = @_;
+            ($s->{label}, $s->{uuid}, $s->{state}, $s->{plan}, $s->{primary_ipv4} // '-');
+        });
+        return 0;
+    }
+
+    if ($sub eq 'show') {
+        my $uuid = shift @args or die "arpcli: servers show requires <uuid>\n";
+        my $server = $client->servers->show($uuid);
+        for my $key (sort keys %$server) {
+            my $val = $server->{$key};
+            if (ref $val eq 'ARRAY') {
+                print "$key=", format_specs($val), "\n" if $key eq 'specs';
+                next;
+            }
+            print "$key=", (defined $val ? $val : 'n/a'), "\n";
+        }
+        return 0;
+    }
+
+    if ($sub eq 'bandwidth') {
+        my $uuid = shift @args or die "arpcli: servers bandwidth requires <uuid>\n";
+        my $range = '30d';
+        if (@args && $args[0] eq '--range') {
+            shift @args;
+            $range = shift @args or die "arpcli: --range requires a value\n";
+        }
+        my $bw = $client->servers->bandwidth($uuid, range => $range);
+        for my $key (qw(range inbound_bytes outbound_bytes total_bytes)) {
+            my $val = $bw->{$key};
+            $val = format_bytes($val) if $key =~ /bytes\z/ && defined $val;
+            print "$key=", (defined $val ? $val : 'n/a'), "\n";
+        }
+        return 0;
+    }
+
+    if ($sub eq 'billing') {
+        my $uuid = shift @args or die "arpcli: servers billing requires <uuid>\n";
+        my $bill = $client->servers->billing($uuid);
+        require JSON::PP;
+        print JSON::PP->new->pretty->encode({ billing => $bill });
+        return 0;
+    }
+
+    if ($sub eq 'ssh-host-keys') {
+        my $uuid = shift @args or die "arpcli: servers ssh-host-keys requires <uuid>\n";
+        my $keys = $client->servers->ssh_host_keys($uuid);
+        for my $k (@$keys) {
+            print "$k->{type}\t$k->{fingerprint}\n";
+        }
+        return 0;
+    }
+
+    if ($sub =~ /\A(?:boot|shutdown|poweroff|reset)\z/) {
+        my $uuid = shift @args or die "arpcli: servers $sub requires <uuid>\n";
+        my $res = $client->actions->$sub($uuid);
+        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
+        return 0;
+    }
+
+    if ($sub eq 'change-iso') {
+        my $uuid = shift @args or die "arpcli: servers change-iso requires <uuid> <iso_file>\n";
+        my $iso  = shift @args or die "arpcli: servers change-iso requires <uuid> <iso_file>\n";
+        my $res = $client->actions->change_iso($uuid, $iso);
+        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
+        return 0;
+    }
+
+    if ($sub eq 'set-parameter') {
+        my $uuid  = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
+        my $param = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
+        my $value = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
+        my $res = $client->actions->set_parameter($uuid, $param, $value);
+        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
+        return 0;
+    }
+
+    if ($sub eq 'delete') {
+        my $uuid = shift @args or die "arpcli: servers delete requires <uuid>\n";
+        my $res = $client->servers->delete($uuid);
+        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH' && $res->{data}{status};
+        print "deleted\n";
+        return 0;
+    }
+
+    die "arpcli: unknown servers subcommand: $sub\n";
+}
+
+sub cmd_plans {
+    my ($client, @args) = @_;
+    my $sub = shift(@args) // 'list';
+    die "arpcli: unknown plans subcommand: $sub\n" unless $sub eq 'list';
+    my $plans = $client->plans->list;
+    print_table([qw(ID CODE NAME SPECS)], $plans, sub {
+        my ($p) = @_;
+        ($p->{id}, $p->{code}, $p->{name}, format_specs($p->{specs}));
+    });
+    return 0;
+}
+
+sub cmd_isos {
+    my ($client, @args) = @_;
+    my $sub = shift(@args) // 'list';
+    die "arpcli: unknown isos subcommand: $sub\n" unless $sub eq 'list';
+    for my $iso (sort @{ $client->isos->list }) {
+        print "$iso\n";
+    }
+    return 0;
+}
+
+sub cmd_os_templates {
+    my ($client, @args) = @_;
+    my $sub = shift(@args) // 'list';
+    die "arpcli: unknown os-templates subcommand: $sub\n" unless $sub eq 'list';
+    my $templates = flatten_os_templates($client->os_templates->list);
+    print_table([qw(CODE FAMILY VERSION)], $templates, sub {
+        my ($t) = @_;
+        ($t->{code}, $t->{family}, $t->{version});
+    });
+    return 0;
+}
+
+sub cmd_dns_records {
+    my ($client, @args) = @_;
+    die "arpcli: dns-records requires a subcommand\n" unless @args;
+    my $sub = shift @args;
+    if ($sub eq 'list') {
+        my $records = $client->dns_records->list;
+        print_table([qw(ID NAME CONTENT DOMAIN)], $records, sub {
+            my ($r) = @_;
+            ($r->{id}, $r->{name}, $r->{content}, $r->{domain});
+        });
+        return 0;
+    }
+    die "arpcli: unknown dns-records subcommand: $sub\n";
+}
+
+sub cmd_ssh_keys {
+    my ($client, @args) = @_;
+    die "arpcli: ssh-keys requires a subcommand\n" unless @args;
+    my $sub = shift @args;
+    if ($sub eq 'list') {
+        my $keys = $client->ssh_keys->list;
+        print_table([qw(ID NAME USERNAME TYPE)], $keys, sub {
+            my ($k) = @_;
+            ($k->{id}, $k->{name}, $k->{username} // '-', $k->{key_type});
+        });
+        return 0;
+    }
+    die "arpcli: unknown ssh-keys subcommand: $sub\n";
+}
+
+sub cmd_simple_list {
+    my ($items, @args) = @_;
+    my $sub = shift(@args) // 'list';
+    die "arpcli: unknown subcommand: $sub\n" unless $sub eq 'list';
+    for my $item (@$items) {
+        if (ref $item eq 'HASH') {
+            print join("\t", map { defined $item->{$_} ? $item->{$_} : '' } sort keys %$item), "\n";
+        }
+        else {
+            print "$item\n";
+        }
+    }
+    return 0;
+}
+
+sub print_table {
+    my ($headers, $rows, $extract) = @_;
+    my @data = map { [ $extract->($_) ] } @$rows;
+    my @widths;
+    for my $i (0 .. $#$headers) {
+        my $w = length $headers->[$i];
+        for my $row (@data) {
+            my $len = length($row->[$i] // '');
+            $w = $len if $len > $w;
+        }
+        push @widths, $w;
+    }
+    print join(' ', map { sprintf("%-*s", $widths[$_], $headers->[$_]) } 0 .. $#$headers), "\n";
+    for my $row (@data) {
+        print join(' ', map {
+            sprintf("%-*s", $widths[$_], $row->[$_] // '')
+        } 0 .. $#$headers), "\n";
+    }
+}
+
+eval {
+    my $code = main();
+    exit ($code // 0);
+};
+if (my $err = $@) {
+    if (ref $err eq 'ArpCLI::Error') {
+        print STDERR "arpcli: ", $err->message, "\n";
+        exit 1;
+    }
+    die $err;
+}

@@ -1,0 +1,25 @@
+# Errors
+
+JSON shape:
+
+```json
+{ "error": { "type": "...", "message": "..." } }
+```
+
+## `error.type` values
+
+unauthorized, forbidden, insufficient_scope, not_found, invalid_range, unprocessable, invalid_iso_file, invalid_parameter, payment_method_required, rate_limited, dispatch_failed
+
+## HTTP status mapping
+
+| Status | Typical type |
+|--------|----------------|
+| 401 | unauthorized |
+| 403 | insufficient_scope / forbidden |
+| 404 | not_found |
+| 402 | payment_method_required |
+| 422 | unprocessable |
+| 429 | rate_limited |
+| 502 | dispatch_failed |
+
+Client: `ArpCLI::HTTP` throws `ArpCLI::Error` with `type`, `message`, `status`, `body`.
