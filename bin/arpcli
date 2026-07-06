@@ -65,7 +65,12 @@ sub main {
         }
     }
 
-    usage() unless @args;
+    unless (@args) {
+        if (defined $config_path) {
+            ArpCLI::Client->new(config_path => $config_path);
+        }
+        usage();
+    }
     my $command = shift @args;
 
     my $client = ArpCLI::Client->new(

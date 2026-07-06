@@ -49,7 +49,10 @@ my $data = {
     dns_records => [{ id => 1, name => '1.0.0.10.in-addr.arpa', content => 'host.', domain => 'zone' }],
     ssh_keys => [],
     locations => [{ code => 'LAX', name => 'Los Angeles', country => 'US' }],
-    plans => [{ id => 1, code => 'vps_small', name => 'Small', specs => [], prices => { monthly => 10 } }],
+    plans => [
+        { id => 1, code => 'vps_small', name => 'Small', specs => [], prices => { monthly => 10 } },
+        { id => 7, code => 'thunder_starter', name => "ARP Thunder\x{2122} - Starter", specs => [], prices => { monthly => 40 } },
+    ],
     isos => ['test.iso'],
     os_templates => {
         openbsd => {
@@ -60,7 +63,11 @@ my $data = {
     bandwidth_range => '30d',
 };
 
-ArpCLI::Output->new(fh => $fh)->print_discovery($data);
+my @warnings;
+{
+    local $SIG{__WARN__} = sub { push @warnings, $_[0] };
+    ArpCLI::Output->new(fh => $fh)->print_discovery($data);
+}
 close $fh;
 
 like($buf, qr/arp\.account/);
@@ -69,5 +76,7 @@ like($buf, qr/web-01/);
 like($buf, qr/arp\.dns_records/);
 like($buf, qr/arp\.catalog/);
 like($buf, qr/openbsd-7\.6-amd64/);
+like($buf, qr/ARP Thunder/, 'status output includes trademark plan name');
+is(scalar @warnings, 0, 'status output emits no wide-character warnings');
 
 done_testing;

@@ -3,7 +3,7 @@ package ArpCLI::Output;
 use strict;
 use warnings;
 
-use ArpCLI::Util qw(format_bytes format_specs flatten_os_templates);
+use ArpCLI::Util qw(format_bytes format_specs flatten_os_templates display_width);
 
 sub new {
     my ($class, %args) = @_;
@@ -17,6 +17,7 @@ sub fh { $_[0]->{fh} }
 sub print_discovery {
     my ($self, $data) = @_;
     my $fh = $self->fh;
+    binmode $fh, ':encoding(UTF-8)' if ref($fh) eq 'GLOB';
 
     $self->_line($fh, 'arp.account');
     $self->_line($fh, '  services.servers.count', scalar @{ $data->{servers} // [] });
@@ -219,19 +220,29 @@ sub _table {
     my @data = map { [ $extract->($_) ] } @$rows;
     my @widths;
     for my $i (0 .. $#$headers) {
-        my $w = length $headers->[$i];
+        my $w = display_width($headers->[$i]);
         for my $row (@data) {
-            my $len = length($row->[$i] // '');
+            my $len = display_width($row->[$i] // '');
             $w = $len if $len > $w;
         }
         push @widths, $w;
     }
-    $self->_line($fh, $indent . join(' ', map { sprintf("%-*s", $widths[$_], $headers->[$_]) } 0 .. $#$headers));
+    $self->_line($fh, $indent . join(' ', map {
+        _pad_cell($headers->[$_], $widths[$_])
+    } 0 .. $#$headers));
     for my $row (@data) {
         $self->_line($fh, $indent . join(' ', map {
-            sprintf("%-*s", $widths[$_], $row->[$_] // '')
+            _pad_cell($row->[$_] // '', $widths[$_])
         } 0 .. $#$headers));
     }
+}
+
+sub _pad_cell {
+    my ($text, $width) = @_;
+    $text //= '';
+    my $pad = $width - display_width($text);
+    $pad = 0 if $pad < 0;
+    return $text . (' ' x $pad);
 }
 
 sub _line {
