@@ -24,7 +24,7 @@ read commands:
   servers billing <uuid>            billing breakdown (JSON)
   servers ssh-host-keys <uuid>      SSH host key fingerprints
   locations list                    list data center locations
-  plans list                        list VPS plans
+  plans list [--json] [--thunder]   list plans (JSON = exact API body)
   isos list                         list mountable ISO images
   os-templates list                 list OS template codes
   dns-records list                  list reverse DNS (PTR) records
@@ -218,7 +218,37 @@ sub cmd_plans {
     my ($client, @args) = @_;
     my $sub = shift(@args) // 'list';
     die "arpcli: unknown plans subcommand: $sub\n" unless $sub eq 'list';
-    ArpCLI::Plans::Format::print_grouped(\*STDOUT, $client->plans->list);
+
+    my ($json, $thunder);
+    while (@args) {
+        my $opt = shift @args;
+        if ($opt eq '--json') {
+            $json = 1;
+        }
+        elsif ($opt eq '--thunder') {
+            $thunder = 1;
+        }
+        else {
+            die "arpcli: unknown plans list option: $opt\n";
+        }
+    }
+
+    my $data = $client->plans->list_raw;
+    if ($thunder) {
+        my $plans = $data->{plans};
+        $data->{plans} = [
+            grep { (($_->{code} // '') =~ /\Athunder_/i) } @{ ref $plans eq 'ARRAY' ? $plans : [] }
+        ];
+    }
+
+    if ($json) {
+        require JSON::PP;
+        binmode STDOUT, ':encoding(UTF-8)';
+        print JSON::PP->new->pretty->canonical->encode($data), "\n";
+        return 0;
+    }
+
+    ArpCLI::Plans::Format::print_grouped(\*STDOUT, $data->{plans} // []);
     return 0;
 }
 

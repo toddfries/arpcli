@@ -51,8 +51,18 @@ Show billing breakdown as JSON.
 List SSH host key fingerprints for a server.
 .It Cm locations Cm list
 List data center locations.
-.It Cm plans Cm list
-List VPS plans available to the account.
+.It Cm plans Cm list Op Fl json Op Fl thunder
+List VPS and ARP Thunder plans available to the account.
+.Fl json
+Print the exact API response body (same shape as
+.Cm GET /api/v1/plans ) .
+.Fl thunder
+When used with
+.Fl json ,
+include only plans whose
+.Va code
+starts with
+.Va thunder_ .
 .It Cm isos Cm list
 List mountable ISO images.
 .It Cm os-templates Cm list
