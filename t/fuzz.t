@@ -44,24 +44,47 @@ sub run_cli {
     is($exit, 1, '-c missing config alone exits 1');
 }
 
-my @cases = (
-    [ ['nosuchcmd'],                           255, qr/unknown command/ ],
-    [ ['-x'],                                  255, qr/unknown option/ ],
-    [ ['-c'],                                  255, qr/-c requires a path/ ],
-    [ ['servers'],                             255, qr/requires a subcommand/ ],
-    [ ['servers', 'nosuch'],                   255, qr/unknown servers subcommand/ ],
-    [ ['servers', 'show'],                     255, qr/requires <uuid>/ ],
-    [ ['servers', 'show', 'not-a-uuid'],         1, qr/uuid is required/ ],
-    [ ['servers', 'list', '--thunder'],        255, qr/unknown servers list option/ ],
+my $uuid = '52326bc0-79df-012c-d6f1-00163ec95f4c';
+my $huge   = 'A' x 256;
 
-    [ ['status', '--range'],                   255, qr/--range requires a value/ ],
-    [ ['status', '--bogus'],                   255, qr/unknown status option/ ],
-    [ ['dns-records'],                         255, qr/requires a subcommand/ ],
-    [ ['dns-records', 'create'],               255, qr/unknown dns-records subcommand/ ],
-    [ ['ssh-keys', 'delete', '1'],             255, qr/unknown ssh-keys subcommand/ ],
-    [ ['plans', 'create'],                     255, qr/unknown plans subcommand/ ],
-    [ ['servers', 'set-parameter', 'a', 'b'], 255, qr/requires <uuid> <param> <value>/ ],
-    [ ['servers list; echo pwned'],            255, qr/unknown command/ ],
+my @cases = (
+    [ ['nosuchcmd'],                                              255, qr/unknown command/ ],
+    [ ['-x'],                                                     255, qr/unknown option/ ],
+    [ ['-c'],                                                     255, qr/-c requires a path/ ],
+    [ [''],                                                       255, qr/unknown command/ ],
+    [ ['servers'],                                                255, qr/requires a subcommand/ ],
+    [ ['servers', 'nosuch'],                                      255, qr/unknown servers subcommand/ ],
+    [ ['servers', 'show'],                                        255, qr/requires <uuid>/ ],
+    [ ['servers', 'show', 'not-a-uuid'],                            1, qr/uuid is required/ ],
+    [ ['servers', 'show', '../../../etc/passwd'],                   1, qr/uuid is required/ ],
+    [ ['servers', 'show', "$uuid\n"],                               1, qr/uuid is required/ ],
+    [ ['servers', 'show', $huge],                                   1, qr/uuid is required/ ],
+    [ ['servers', 'list', '--thunder'],                           255, qr/unknown servers list option/ ],
+
+    [ ['servers', 'delete'],                                      255, qr/requires <uuid>/ ],
+    [ ['servers', 'boot'],                                        255, qr/requires <uuid>/ ],
+    [ ['servers', 'change-iso'],                                  255, qr/requires <uuid> <iso_file>/ ],
+    [ ['servers', 'change-iso', 'baduuid'],                       255, qr/requires <uuid> <iso_file>/ ],
+    [ ['servers', 'bandwidth', '--range'],                          1, qr/uuid is required/ ],
+    [ ['servers', 'bandwidth', 'baduuid', '--range'],             255, qr/--range requires a value/ ],
+    [ ['servers', 'set-parameter', 'a', 'b'],                   255, qr/requires <uuid> <param> <value>/ ],
+    [ ['servers', 'set-parameter', 'baduuid', 'boot-menu', 'on', 'extra'], 255, qr/unknown servers set-parameter option/ ],
+    [ ['servers', 'create'],                                      255, qr/unknown servers subcommand/ ],
+
+    [ ['status', '--range'],                                      255, qr/--range requires a value/ ],
+    [ ['status', '--bogus'],                                      255, qr/unknown status option/ ],
+    [ ['dns-records'],                                            255, qr/requires a subcommand/ ],
+    [ ['dns-records', 'create'],                                  255, qr/unknown dns-records subcommand/ ],
+    [ ['dns-records', 'update', '1'],                             255, qr/unknown dns-records subcommand/ ],
+    [ ['dns-records', 'delete', '1'],                             255, qr/unknown dns-records subcommand/ ],
+    [ ['ssh-keys', 'create'],                                     255, qr/unknown ssh-keys subcommand/ ],
+    [ ['ssh-keys', 'delete', '1'],                                255, qr/unknown ssh-keys subcommand/ ],
+    [ ['plans', 'create'],                                        255, qr/unknown plans subcommand/ ],
+    [ ['isos', 'list', '--thunder'],                              255, qr/unknown isos list option/ ],
+    [ ['os-templates', 'list', '--range', '30d'],                 255, qr/unknown os-templates list option/ ],
+    [ ['locations', 'list', '--thunder'],                         255, qr/unknown locations list option/ ],
+
+    [ ['servers list; echo pwned'],                               255, qr/unknown command/ ],
 );
 
 for my $case (@cases) {
@@ -70,5 +93,9 @@ for my $case (@cases) {
     like($out, $pattern, join(' ', @$args) . ' stderr');
     is($exit, $want_exit, join(' ', @$args) . " exit $want_exit");
 }
+
+# Convention from fuzzing: CLI parse/usage errors exit 255; API/config errors exit 1.
+is((run_cli('servers', 'show', 'not-a-uuid'))[0], 1, 'API-layer uuid validation exits 1');
+is((run_cli('servers', 'nosuch'))[0], 255, 'CLI unknown subcommand exits 255');
 
 done_testing;

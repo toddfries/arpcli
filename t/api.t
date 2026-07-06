@@ -88,4 +88,14 @@ my $data = $client->discover;
 is(scalar @{ $data->{servers} }, 2);
 ok(exists $data->{server_detail}{$uuid});
 
+my $servers_raw = $client->servers->list_raw;
+is(scalar @{ $servers_raw->{servers} }, 2);
+ok($servers_raw->{meta}{pagination}{aggregated});
+is($servers_raw->{meta}{pagination}{total_entries}, 2);
+
+my $dns_raw = $client->dns_records->list_raw;
+is(scalar @{ $dns_raw->{dns_records} }, 1);
+ok($dns_raw->{meta}{pagination}{aggregated});
+is($dns_raw->{meta}{pagination}{total_entries}, 1);
+
 done_testing;
