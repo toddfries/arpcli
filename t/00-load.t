@@ -3,8 +3,7 @@ use warnings;
 
 use Test::More;
 
-use lib 't/lib';
-use lib 'lib';
+use lib 'vendor/lib/perl5', 't/lib', 'lib';
 
 my @modules = qw(
     ArpCLI
@@ -30,6 +29,8 @@ my @modules = qw(
     ArpCLI::OpenAPI::Sync
     ArpCLI::OpenAPI::Registry
     ArpCLI::Plans::Format
+    ArpCLI::CLI::Args
+    ArpCLI::CLI::Format
 );
 
 plan tests => scalar @modules;

@@ -12,11 +12,30 @@ sub list {
     return $self->_paginate('/api/v1/servers', 'servers');
 }
 
+sub list_raw {
+    my ($self) = @_;
+    my $servers = $self->list;
+    return {
+        servers => $servers,
+        meta    => {
+            pagination => {
+                total_entries => scalar @$servers,
+                aggregated    => \1,
+            },
+        },
+    };
+}
+
 sub show {
     my ($self, $uuid) = @_;
     $self->_require_uuid($uuid);
-    my $res = $self->http->get("/api/v1/servers/$uuid");
-    return $res->{data}{server};
+    return $self->show_raw($uuid)->{server};
+}
+
+sub show_raw {
+    my ($self, $uuid) = @_;
+    $self->_require_uuid($uuid);
+    return $self->_get_data('get', "/api/v1/servers/$uuid");
 }
 
 sub create {
@@ -33,26 +52,38 @@ sub delete {
 
 sub bandwidth {
     my ($self, $uuid, %args) = @_;
+    return $self->bandwidth_raw($uuid, %args)->{bandwidth};
+}
+
+sub bandwidth_raw {
+    my ($self, $uuid, %args) = @_;
     $self->_require_uuid($uuid);
     my $query = {};
     $query->{range} = $args{range} if defined $args{range};
-    my $res = $self->http->get("/api/v1/servers/$uuid/bandwidth", query => $query);
-    return $res->{data}{bandwidth};
+    return $self->_get_data('get', "/api/v1/servers/$uuid/bandwidth", query => $query);
 }
 
 sub billing {
     my ($self, $uuid) = @_;
+    return $self->billing_raw($uuid)->{billing};
+}
+
+sub billing_raw {
+    my ($self, $uuid) = @_;
     $self->_require_uuid($uuid);
-    my $res = $self->http->get("/api/v1/servers/$uuid/billing");
-    return $res->{data}{billing};
+    return $self->_get_data('get', "/api/v1/servers/$uuid/billing");
 }
 
 sub ssh_host_keys {
     my ($self, $uuid) = @_;
-    $self->_require_uuid($uuid);
-    my $res = $self->http->get("/api/v1/servers/$uuid/ssh_host_keys");
-    my $items = $res->{data}{ssh_host_keys};
+    my $items = $self->ssh_host_keys_raw($uuid)->{ssh_host_keys};
     return (ref $items eq 'ARRAY') ? $items : [];
+}
+
+sub ssh_host_keys_raw {
+    my ($self, $uuid) = @_;
+    $self->_require_uuid($uuid);
+    return $self->_get_data('get', "/api/v1/servers/$uuid/ssh_host_keys");
 }
 
 sub _require_uuid {

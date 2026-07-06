@@ -25,6 +25,11 @@ close $fh;
         qr/usage: arpcli/,
         'help text',
     );
+    like(
+        qx($perl -Ilib $bin -h 2>&1),
+        qr/--json/,
+        'help documents --json',
+    );
 }
 
 done_testing;

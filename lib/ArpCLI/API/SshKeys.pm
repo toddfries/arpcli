@@ -7,9 +7,14 @@ use parent 'ArpCLI::API::Base';
 
 sub list {
     my ($self) = @_;
-    my $res = $self->http->get('/api/v1/ssh_keys');
-    my $items = $res->{data}{ssh_keys};
+    my $data = $self->list_raw;
+    my $items = $data->{ssh_keys};
     return (ref $items eq 'ARRAY') ? $items : [];
+}
+
+sub list_raw {
+    my ($self) = @_;
+    return $self->_get_data('get', '/api/v1/ssh_keys');
 }
 
 sub create {

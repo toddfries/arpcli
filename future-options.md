@@ -7,7 +7,7 @@ Reference for later arpcli passes.
 - [ ] `servers create` with flags for plan_id, os_template, location, ssh_key_ids (API module exists; CLI not wired)
 - [ ] `dns-records create|update|delete` subcommands with validation messages (API module exists; CLI not wired)
 - [ ] `ssh-keys create|delete` subcommands (API module exists; CLI not wired)
-- [ ] JSON output mode (`--json`) for scripting (implemented for `plans list` only)
+
 - [ ] Filter flags: `servers list --state running`, `isos list --grep openbsd`
 - [ ] Colored output and `--quiet` for errors-only
 - [ ] Configurable default bandwidth range in `arpcli.conf`

@@ -10,6 +10,20 @@ sub list {
     return $self->_paginate('/api/v1/dns_records', 'dns_records');
 }
 
+sub list_raw {
+    my ($self) = @_;
+    my $records = $self->list;
+    return {
+        dns_records => $records,
+        meta        => {
+            pagination => {
+                total_entries => scalar @$records,
+                aggregated    => \1,
+            },
+        },
+    };
+}
+
 sub create {
     my ($self, $dns_record) = @_;
     my $res = $self->http->post('/api/v1/dns_records', body => { dns_record => $dns_record });

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use lib 'lib';
+use lib 'vendor/lib/perl5', 'lib';
 
 use ArpCLI::OpenAPI::Codegen;
 use ArpCLI::OpenAPI::Map;

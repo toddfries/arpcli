@@ -10,34 +10,36 @@ use ArpCLI::Client;
 use ArpCLI::Error;
 use ArpCLI::Output;
 use ArpCLI::Plans::Format;
+use ArpCLI::CLI::Args;
+use ArpCLI::CLI::Format;
 use ArpCLI::Util qw(is_uuid flatten_os_templates format_specs format_bytes display_width);
 
 sub usage {
     print <<'USAGE';
 usage: arpcli [-c config] <command> [arguments]
 
-read commands:
-  status [--range 30d]              discover account services (outline report)
-  servers list                      list servers
-  servers show <uuid>               show one server
-  servers bandwidth <uuid> [--range 30d]
-  servers billing <uuid>            billing breakdown (JSON)
-  servers ssh-host-keys <uuid>      SSH host key fingerprints
-  locations list                    list data center locations
-  plans list [--json] [--thunder]   list plans (JSON = exact API body)
-  isos list                         list mountable ISO images
-  os-templates list                 list OS template codes
-  dns-records list                  list reverse DNS (PTR) records
-  ssh-keys list                     list account SSH public keys
+Most read commands accept --json to print the API response body (or an
+aggregated list envelope for paginated resources).
 
-write commands (require write-scoped API key):
-  servers delete <uuid>
-  servers boot <uuid>
-  servers shutdown <uuid>
-  servers poweroff <uuid>
-  servers reset <uuid>
-  servers change-iso <uuid> <iso_file>
-  servers set-parameter <uuid> <param> <value>
+read commands:
+  status [--range 30d] [--json]       discover account services
+  servers list [--json]
+  servers show <uuid> [--json]
+  servers bandwidth <uuid> [--range 30d] [--json]
+  servers billing <uuid> [--json]
+  servers ssh-host-keys <uuid> [--json]
+  locations list [--json]
+  plans list [--json] [--thunder]
+  isos list [--json]
+  os-templates list [--json]
+  dns-records list [--json]
+  ssh-keys list [--json]
+
+write commands (require write-scoped API key; --json prints API body):
+  servers delete <uuid> [--json]
+  servers boot|shutdown|poweroff|reset <uuid> [--json]
+  servers change-iso <uuid> <iso_file> [--json]
+  servers set-parameter <uuid> <param> <value> [--json]
 
 options:
   -c path    configuration file (default: ~/.config/arpcli/conf)
@@ -71,23 +73,24 @@ sub main {
     );
 
     if ($command eq 'status') {
-        my $range = '30d';
-        while (@args) {
-            my $arg = shift @args;
-            if ($arg eq '--range') {
-                die "arpcli: --range requires a value\n" unless @args;
-                $range = shift @args;
-            }
-            else {
-                die "arpcli: unknown status option: $arg\n";
-            }
-        }
-        my $data = $client->discover(bandwidth_range => $range);
-        ArpCLI::Output->new->print_discovery($data);
-        return 0;
+        return cmd_status($client, @args);
     }
 
     return run_resource($client, $command, @args);
+}
+
+sub cmd_status {
+    my ($client, @args) = @_;
+    my $json  = ArpCLI::CLI::Args::extract_json(\@args);
+    my $range = ArpCLI::CLI::Args::extract_range(\@args);
+    ArpCLI::CLI::Args::ensure_empty(\@args, 'status');
+    my $data = $client->discover(bandwidth_range => $range);
+    if ($json) {
+        ArpCLI::CLI::Format::print_json($data);
+        return 0;
+    }
+    ArpCLI::Output->new->print_discovery($data);
+    return 0;
 }
 
 sub run_resource {
@@ -97,7 +100,7 @@ sub run_resource {
         return cmd_servers($client, @args);
     }
     if ($command eq 'locations') {
-        return cmd_simple_list($client->locations->list, @args);
+        return cmd_locations($client, @args);
     }
     if ($command eq 'plans') {
         return cmd_plans($client, @args);
@@ -124,6 +127,12 @@ sub cmd_servers {
     my $sub = shift @args;
 
     if ($sub eq 'list') {
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers list');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->servers->list_raw);
+            return 0;
+        }
         my $servers = $client->servers->list;
         print_table([qw(LABEL UUID STATE PLAN IPv4)], $servers, sub {
             my ($s) = @_;
@@ -134,6 +143,12 @@ sub cmd_servers {
 
     if ($sub eq 'show') {
         my $uuid = shift @args or die "arpcli: servers show requires <uuid>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers show');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->servers->show_raw($uuid));
+            return 0;
+        }
         my $server = $client->servers->show($uuid);
         for my $key (sort keys %$server) {
             my $val = $server->{$key};
@@ -148,10 +163,14 @@ sub cmd_servers {
 
     if ($sub eq 'bandwidth') {
         my $uuid = shift @args or die "arpcli: servers bandwidth requires <uuid>\n";
-        my $range = '30d';
-        if (@args && $args[0] eq '--range') {
-            shift @args;
-            $range = shift @args or die "arpcli: --range requires a value\n";
+        my $json  = ArpCLI::CLI::Args::extract_json(\@args);
+        my $range = ArpCLI::CLI::Args::extract_range(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers bandwidth');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json(
+                $client->servers->bandwidth_raw($uuid, range => $range),
+            );
+            return 0;
         }
         my $bw = $client->servers->bandwidth($uuid, range => $range);
         for my $key (qw(range inbound_bytes outbound_bytes total_bytes)) {
@@ -164,14 +183,32 @@ sub cmd_servers {
 
     if ($sub eq 'billing') {
         my $uuid = shift @args or die "arpcli: servers billing requires <uuid>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers billing');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->servers->billing_raw($uuid));
+            return 0;
+        }
         my $bill = $client->servers->billing($uuid);
-        require JSON::PP;
-        print JSON::PP->new->pretty->encode({ billing => $bill });
+        for my $key (sort keys %$bill) {
+            my $val = $bill->{$key};
+            if (ref $val eq 'ARRAY') {
+                print "$key=[", scalar(@$val), " items]\n";
+                next;
+            }
+            print "$key=", (defined $val ? $val : 'n/a'), "\n";
+        }
         return 0;
     }
 
     if ($sub eq 'ssh-host-keys') {
         my $uuid = shift @args or die "arpcli: servers ssh-host-keys requires <uuid>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers ssh-host-keys');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->servers->ssh_host_keys_raw($uuid));
+            return 0;
+        }
         my $keys = $client->servers->ssh_host_keys($uuid);
         for my $k (@$keys) {
             print "$k->{type}\t$k->{fingerprint}\n";
@@ -181,31 +218,40 @@ sub cmd_servers {
 
     if ($sub =~ /\A(?:boot|shutdown|poweroff|reset)\z/) {
         my $uuid = shift @args or die "arpcli: servers $sub requires <uuid>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, "servers $sub");
         my $res = $client->actions->$sub($uuid);
-        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
-        return 0;
+        return _print_action_result($res, $json);
     }
 
     if ($sub eq 'change-iso') {
         my $uuid = shift @args or die "arpcli: servers change-iso requires <uuid> <iso_file>\n";
         my $iso  = shift @args or die "arpcli: servers change-iso requires <uuid> <iso_file>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers change-iso');
         my $res = $client->actions->change_iso($uuid, $iso);
-        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
-        return 0;
+        return _print_action_result($res, $json);
     }
 
     if ($sub eq 'set-parameter') {
         my $uuid  = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
         my $param = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
         my $value = shift @args or die "arpcli: servers set-parameter requires <uuid> <param> <value>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers set-parameter');
         my $res = $client->actions->set_parameter($uuid, $param, $value);
-        print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH';
-        return 0;
+        return _print_action_result($res, $json);
     }
 
     if ($sub eq 'delete') {
         my $uuid = shift @args or die "arpcli: servers delete requires <uuid>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'servers delete');
         my $res = $client->servers->delete($uuid);
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($res->{data} // { status => 'deleted' });
+            return 0;
+        }
         print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH' && $res->{data}{status};
         print "deleted\n";
         return 0;
@@ -214,24 +260,24 @@ sub cmd_servers {
     die "arpcli: unknown servers subcommand: $sub\n";
 }
 
+sub _print_action_result {
+    my ($res, $json) = @_;
+    if ($json) {
+        ArpCLI::CLI::Format::print_json($res->{data} // {});
+        return 0;
+    }
+    print "status=$res->{data}{status}\n" if ref $res->{data} eq 'HASH' && $res->{data}{status};
+    return 0;
+}
+
 sub cmd_plans {
     my ($client, @args) = @_;
     my $sub = shift(@args) // 'list';
     die "arpcli: unknown plans subcommand: $sub\n" unless $sub eq 'list';
 
-    my ($json, $thunder);
-    while (@args) {
-        my $opt = shift @args;
-        if ($opt eq '--json') {
-            $json = 1;
-        }
-        elsif ($opt eq '--thunder') {
-            $thunder = 1;
-        }
-        else {
-            die "arpcli: unknown plans list option: $opt\n";
-        }
-    }
+    my $json    = ArpCLI::CLI::Args::extract_json(\@args);
+    my $thunder = ArpCLI::CLI::Args::extract_thunder(\@args);
+    ArpCLI::CLI::Args::ensure_empty(\@args, 'plans list');
 
     my $data = $client->plans->list_raw;
     if ($thunder) {
@@ -242,9 +288,7 @@ sub cmd_plans {
     }
 
     if ($json) {
-        require JSON::PP;
-        binmode STDOUT, ':encoding(UTF-8)';
-        print JSON::PP->new->pretty->canonical->encode($data), "\n";
+        ArpCLI::CLI::Format::print_json($data);
         return 0;
     }
 
@@ -252,10 +296,32 @@ sub cmd_plans {
     return 0;
 }
 
+sub cmd_locations {
+    my ($client, @args) = @_;
+    my $sub = shift(@args) // 'list';
+    die "arpcli: unknown locations subcommand: $sub\n" unless $sub eq 'list';
+    my $json = ArpCLI::CLI::Args::extract_json(\@args);
+    ArpCLI::CLI::Args::ensure_empty(\@args, 'locations list');
+    if ($json) {
+        ArpCLI::CLI::Format::print_json($client->locations->list_raw);
+        return 0;
+    }
+    for my $loc (@{ $client->locations->list }) {
+        print join("\t", map { defined $loc->{$_} ? $loc->{$_} : '' } sort keys %$loc), "\n";
+    }
+    return 0;
+}
+
 sub cmd_isos {
     my ($client, @args) = @_;
     my $sub = shift(@args) // 'list';
     die "arpcli: unknown isos subcommand: $sub\n" unless $sub eq 'list';
+    my $json = ArpCLI::CLI::Args::extract_json(\@args);
+    ArpCLI::CLI::Args::ensure_empty(\@args, 'isos list');
+    if ($json) {
+        ArpCLI::CLI::Format::print_json($client->isos->list_raw);
+        return 0;
+    }
     for my $iso (sort @{ $client->isos->list }) {
         print "$iso\n";
     }
@@ -266,6 +332,12 @@ sub cmd_os_templates {
     my ($client, @args) = @_;
     my $sub = shift(@args) // 'list';
     die "arpcli: unknown os-templates subcommand: $sub\n" unless $sub eq 'list';
+    my $json = ArpCLI::CLI::Args::extract_json(\@args);
+    ArpCLI::CLI::Args::ensure_empty(\@args, 'os-templates list');
+    if ($json) {
+        ArpCLI::CLI::Format::print_json($client->os_templates->list_raw);
+        return 0;
+    }
     my $templates = flatten_os_templates($client->os_templates->list);
     print_table([qw(CODE FAMILY VERSION)], $templates, sub {
         my ($t) = @_;
@@ -279,6 +351,12 @@ sub cmd_dns_records {
     die "arpcli: dns-records requires a subcommand\n" unless @args;
     my $sub = shift @args;
     if ($sub eq 'list') {
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'dns-records list');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->dns_records->list_raw);
+            return 0;
+        }
         my $records = $client->dns_records->list;
         print_table([qw(ID NAME CONTENT DOMAIN)], $records, sub {
             my ($r) = @_;
@@ -294,6 +372,12 @@ sub cmd_ssh_keys {
     die "arpcli: ssh-keys requires a subcommand\n" unless @args;
     my $sub = shift @args;
     if ($sub eq 'list') {
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'ssh-keys list');
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($client->ssh_keys->list_raw);
+            return 0;
+        }
         my $keys = $client->ssh_keys->list;
         print_table([qw(ID NAME USERNAME TYPE)], $keys, sub {
             my ($k) = @_;
@@ -302,21 +386,6 @@ sub cmd_ssh_keys {
         return 0;
     }
     die "arpcli: unknown ssh-keys subcommand: $sub\n";
-}
-
-sub cmd_simple_list {
-    my ($items, @args) = @_;
-    my $sub = shift(@args) // 'list';
-    die "arpcli: unknown subcommand: $sub\n" unless $sub eq 'list';
-    for my $item (@$items) {
-        if (ref $item eq 'HASH') {
-            print join("\t", map { defined $item->{$_} ? $item->{$_} : '' } sort keys %$item), "\n";
-        }
-        else {
-            print "$item\n";
-        }
-    }
-    return 0;
 }
 
 sub print_table {

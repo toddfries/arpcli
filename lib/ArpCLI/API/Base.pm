@@ -12,6 +12,13 @@ sub new {
 
 sub http { $_[0]->{http} }
 
+sub _get_data {
+    my ($self, $method, $path, %args) = @_;
+    my $res = $self->http->$method($path, %args);
+    my $data = $res->{data};
+    return ref $data eq 'HASH' ? $data : {};
+}
+
 sub _paginate {
     my ($self, $path, $items_key) = @_;
     return paginate_all(sub {
