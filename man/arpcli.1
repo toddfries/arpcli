@@ -1,4 +1,4 @@
-.Dd $Mdocdate: July 5 2026 $
+.Dd $Mdocdate: July 6 2026 $
 .Dt ARPCLI 1
 .Os
 .Sh NAME
@@ -26,7 +26,7 @@ key=value lines for each server, fixed-width summary tables, and catalog
 listings for locations, plans, ISOs, and OS templates.
 .Pp
 Most read commands accept
-.Fl json
+.Fl -json
 to print the API response body.
 Paginated list commands
 .Po Cm servers Ns , Cm dns-records
@@ -35,15 +35,15 @@ return all pages in one envelope with
 .Va meta.pagination.aggregated .
 .Sh READ COMMANDS
 .Bl -tag -width Ds
-.It Cm status Op Fl -range Ar 30d Op Fl json
+.It Cm status Op Fl -range Ar 30d Op Fl -json
 Discover all readable account services and emit a consolidated report.
 The default bandwidth range is
 .Ar 30d .
-.It Cm servers Cm list Op Fl json
+.It Cm servers Cm list Op Fl -json
 List servers in a fixed-width table.
-.It Cm servers Cm show Ar uuid Op Fl json
+.It Cm servers Cm show Ar uuid Op Fl -json
 Show one server as sysctl-style key=value lines.
-.It Cm servers Cm bandwidth Ar uuid Op Fl -range Ar range Op Fl json
+.It Cm servers Cm bandwidth Ar uuid Op Fl -range Ar range Op Fl -json
 Show bandwidth counters for a server.
 The default range is
 .Ar 30d .
@@ -54,48 +54,48 @@ Valid ranges are
 .Ar 7d ,
 and
 .Ar 30d .
-.It Cm servers Cm billing Ar uuid Op Fl json
+.It Cm servers Cm billing Ar uuid Op Fl -json
 Show billing breakdown.
-.It Cm servers Cm ssh-host-keys Ar uuid Op Fl json
+.It Cm servers Cm ssh-host-keys Ar uuid Op Fl -json
 List SSH host key fingerprints for a server.
-.It Cm locations Cm list Op Fl json
+.It Cm locations Cm list Op Fl -json
 List data center locations.
-.It Cm plans Cm list Op Fl json Op Fl thunder
+.It Cm plans Cm list Op Fl -json Op Fl -thunder
 List VPS and ARP Thunder plans available to the account.
-.Fl thunder
+.Fl -thunder
 Include only plans whose
 .Va code
 starts with
 .Va thunder_ .
-.It Cm isos Cm list Op Fl json
+.It Cm isos Cm list Op Fl -json
 List mountable ISO images.
-.It Cm os-templates Cm list Op Fl json
+.It Cm os-templates Cm list Op Fl -json
 List OS template codes.
-.It Cm dns-records Cm list Op Fl json
+.It Cm dns-records Cm list Op Fl -json
 List reverse DNS (PTR) records.
-.It Cm ssh-keys Cm list Op Fl json
+.It Cm ssh-keys Cm list Op Fl -json
 List account SSH public keys.
 .El
 .Sh WRITE COMMANDS
 Write commands require a
 .Cm write
 -scoped API key.
-.Fl json
+.Fl -json
 prints the API response body.
 .Bl -tag -width Ds
-.It Cm servers Cm delete Ar uuid Op Fl json
+.It Cm servers Cm delete Ar uuid Op Fl -json
 Delete a server.
-.It Cm servers Cm boot Ar uuid Op Fl json
+.It Cm servers Cm boot Ar uuid Op Fl -json
 Queue a boot (power on) action.
-.It Cm servers Cm shutdown Ar uuid Op Fl json
+.It Cm servers Cm shutdown Ar uuid Op Fl -json
 Queue a graceful ACPI shutdown.
-.It Cm servers Cm poweroff Ar uuid Op Fl json
+.It Cm servers Cm poweroff Ar uuid Op Fl -json
 Queue a forced power off.
-.It Cm servers Cm reset Ar uuid Op Fl json
+.It Cm servers Cm reset Ar uuid Op Fl -json
 Queue a hard reset.
-.It Cm servers Cm change-iso Ar uuid Ar iso_file Op Fl json
+.It Cm servers Cm change-iso Ar uuid Ar iso_file Op Fl -json
 Mount a different ISO image.
-.It Cm servers Cm set-parameter Ar uuid Ar param Ar value Op Fl json
+.It Cm servers Cm set-parameter Ar uuid Ar param Ar value Op Fl -json
 Change an advanced server parameter.
 .Ar param
 must be one of
