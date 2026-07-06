@@ -37,7 +37,7 @@ perl Makefile.PL && make && make test
 ./bin/arpcli servers list --json
 ```
 
-Example output in [EXAMPLES.md].
+Example output in [EXAMPLES.md](EXAMPLES.md).
 
 `prove -lr t/` runs the offline test suite (~279 tests). OpenBSD-style man pages
 live in `man/`. See `AI-CRIBNOTES.md` if you are an AI or a future-me picking
