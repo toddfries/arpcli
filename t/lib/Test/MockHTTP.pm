@@ -6,9 +6,11 @@ use warnings;
 sub new {
     my ($class, %args) = @_;
     return bless {
-        responses => $args{responses} // {},
-        requests  => [],
-        default   => $args{default},
+        responses  => $args{responses} // {},
+        sequences  => $args{sequences} // {},
+        requests   => [],
+        default    => $args{default},
+        seq_counts => {},
     }, $class;
 }
 
@@ -24,6 +26,12 @@ sub request {
     };
 
     my $key = "$method $url";
+    if (my $seq = $self->{sequences}{$key}) {
+        my $idx = $self->{seq_counts}{$key} // 0;
+        $self->{seq_counts}{$key} = $idx + 1;
+        return $seq->[$idx] // $seq->[-1];
+    }
+
     my $resp = $self->{responses}{$key};
     $resp //= $self->{default} if $self->{default};
     $resp //= {

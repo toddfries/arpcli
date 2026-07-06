@@ -29,6 +29,7 @@ my @modules = qw(
     ArpCLI::OpenAPI::Codegen
     ArpCLI::OpenAPI::Sync
     ArpCLI::OpenAPI::Registry
+    ArpCLI::Plans::Format
 );
 
 plan tests => scalar @modules;

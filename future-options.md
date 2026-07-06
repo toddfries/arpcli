@@ -15,8 +15,9 @@ Reference for later arpcli passes.
 ## API coverage
 
 - [ ] Detect API key scope by probing a write endpoint and caching result
-- [ ] Retry with backoff on 429 and 502
 - [ ] ETag / If-None-Match if API adds caching headers
+- [ ] List plan add-ons / extras (no endpoint in OpenAPI v1; `GET /plans` returns only `vps_*` and `thunder_*` base plans with `prices{hourly,monthly}` — no add-on catalog)
+- [ ] Surface rate-limit quota headers if ARP adds them (live responses currently expose only `x-request-id`, `x-runtime`, `x-cache`; limits are documented as 120/min per IP, 60/min per key, 7/min server create)
 
 
 ## Output

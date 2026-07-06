@@ -9,7 +9,8 @@ use lib "$Bin/../lib";
 use ArpCLI::Client;
 use ArpCLI::Error;
 use ArpCLI::Output;
-use ArpCLI::Util qw(is_uuid flatten_os_templates format_specs format_bytes);
+use ArpCLI::Plans::Format;
+use ArpCLI::Util qw(is_uuid flatten_os_templates format_specs format_bytes display_width);
 
 sub usage {
     print <<'USAGE';
@@ -217,11 +218,7 @@ sub cmd_plans {
     my ($client, @args) = @_;
     my $sub = shift(@args) // 'list';
     die "arpcli: unknown plans subcommand: $sub\n" unless $sub eq 'list';
-    my $plans = $client->plans->list;
-    print_table([qw(ID CODE NAME SPECS)], $plans, sub {
-        my ($p) = @_;
-        ($p->{id}, $p->{code}, $p->{name}, format_specs($p->{specs}));
-    });
+    ArpCLI::Plans::Format::print_grouped(\*STDOUT, $client->plans->list);
     return 0;
 }
 
@@ -297,19 +294,27 @@ sub print_table {
     my @data = map { [ $extract->($_) ] } @$rows;
     my @widths;
     for my $i (0 .. $#$headers) {
-        my $w = length $headers->[$i];
+        my $w = display_width($headers->[$i]);
         for my $row (@data) {
-            my $len = length($row->[$i] // '');
+            my $len = display_width($row->[$i] // '');
             $w = $len if $len > $w;
         }
         push @widths, $w;
     }
-    print join(' ', map { sprintf("%-*s", $widths[$_], $headers->[$_]) } 0 .. $#$headers), "\n";
+    print join(' ', map { _pad_cell($headers->[$_], $widths[$_]) } 0 .. $#$headers), "\n";
     for my $row (@data) {
         print join(' ', map {
-            sprintf("%-*s", $widths[$_], $row->[$_] // '')
+            _pad_cell($row->[$_] // '', $widths[$_])
         } 0 .. $#$headers), "\n";
     }
+}
+
+sub _pad_cell {
+    my ($text, $width) = @_;
+    $text //= '';
+    my $pad = $width - display_width($text);
+    $pad = 0 if $pad < 0;
+    return $text . (' ' x $pad);
 }
 
 eval {

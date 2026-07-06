@@ -13,6 +13,8 @@ our @EXPORT_OK = qw(
     paginate_all
     redact_secrets
     redact_headers
+    display_sanitize
+    display_width
 );
 
 sub trim {
@@ -88,6 +90,20 @@ sub redact_headers {
     my %copy = %$headers;
     $copy{Authorization} = 'Bearer [REDACTED]' if exists $copy{Authorization};
     return \%copy;
+}
+
+sub display_sanitize {
+    my ($text) = @_;
+    return '' unless defined $text;
+    $text =~ s/\x{2122}/(TM)/g;
+    $text =~ s/™/(TM)/g;
+    return $text;
+}
+
+sub display_width {
+    my ($text) = @_;
+    return 0 unless defined $text && length $text;
+    return length display_sanitize($text);
 }
 
 sub paginate_all {
