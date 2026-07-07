@@ -59,6 +59,10 @@ my @cases = (
     [ ['servers', 'show', '../../../etc/passwd'],                   1, qr/uuid is required/ ],
     [ ['servers', 'show', "$uuid\n"],                               1, qr/uuid is required/ ],
     [ ['servers', 'show', $huge],                                   1, qr/uuid is required/ ],
+    [ ['servers', 'list', '--state'],                             255, qr/--state requires a value/ ],
+    [ ['servers', 'list', '--re'],                                255, qr/--re requires a pattern/ ],
+    [ ['servers', 'list', '--state', 'running'],                   1, qr/invalid JSON|HTTP|Could not connect/ ],
+    [ ['isos', 'list', '--re', 'openbsd'],                          1, qr/invalid JSON|HTTP|Could not connect/ ],
     [ ['servers', 'list', '--thunder'],                           255, qr/unknown servers list option/ ],
 
     [ ['servers', 'delete'],                                      255, qr/requires <uuid>/ ],

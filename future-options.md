@@ -8,7 +8,7 @@ Reference for later arpcli passes.
 - [x] `dns-records create|update|delete`
 - [x] `ssh-keys create|delete` subcommands
 
-- [ ] Filter flags: `servers list --state running`, `isos list --grep openbsd`
+- [x] Filter flags: `servers list --state running`, `--re pattern` on servers/isos/os-templates
 - [ ] Colored output and `--quiet` for errors-only
 - [ ] Configurable default bandwidth range in `arpcli.conf`
 

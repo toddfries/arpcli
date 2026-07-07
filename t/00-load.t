@@ -31,6 +31,7 @@ my @modules = qw(
     ArpCLI::OpenAPI::Registry
     ArpCLI::Plans::Format
     ArpCLI::CLI::Args
+    ArpCLI::CLI::Filter
     ArpCLI::CLI::Format
 );
 

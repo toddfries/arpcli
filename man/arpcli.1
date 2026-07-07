@@ -42,8 +42,26 @@ The default bandwidth range is
 .Fl -brief
 prints service counts and the server summary table only, skipping
 per-server bandwidth, billing, and catalog listings (fewer API calls).
-.It Cm servers Cm list Op Fl -json
+.It Cm servers Cm list Op Fl -state Ar state Op Fl -re Ar pattern Op Fl -json
 List servers in a fixed-width table.
+.Fl -state
+filters by server state (e.g.
+.Cm running ) .
+.Fl -re
+filters by case-insensitive Perl regex against label, UUID, state, plan,
+OS template, and IP fields.
+.It Cm isos Op Cm list Op Fl -re Ar pattern Op Fl -json
+List mountable ISO images.
+.Fl -re
+filters filenames by case-insensitive Perl regex.
+.Cm list
+may be omitted.
+.It Cm os-templates Op Cm list Op Fl -re Ar pattern Op Fl -json
+List OS template codes.
+.Fl -re
+filters by case-insensitive Perl regex against code, family, version, and title.
+.Cm list
+may be omitted.
 .It Cm servers Cm show Ar uuid Op Fl -json
 Show one server as sysctl-style key=value lines.
 .It Cm servers Cm bandwidth Ar uuid Op Fl -range Ar range Op Fl -json
@@ -74,14 +92,6 @@ Include only plans whose
 .Va code
 starts with
 .Va thunder_ .
-.It Cm isos Op Cm list Op Fl -json
-List mountable ISO images.
-.Cm list
-may be omitted.
-.It Cm os-templates Op Cm list Op Fl -json
-List OS template codes.
-.Cm list
-may be omitted.
 .It Cm dns-records Cm list Op Fl -json
 List reverse DNS (PTR) records.
 .It Cm ssh-keys Cm list Op Fl -json

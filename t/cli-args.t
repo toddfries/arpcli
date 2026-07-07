@@ -33,6 +33,21 @@ my @brief = qw(--brief --json);
 is(ArpCLI::CLI::Args::extract_brief(\@brief), 1);
 is_deeply(\@brief, ['--json'], 'extract_brief strips --brief only');
 
+my @state_args = qw(--state running --json);
+is(ArpCLI::CLI::Args::extract_state(\@state_args), 'running');
+is_deeply(\@state_args, ['--json'], 'extract_state strips --state value');
+
+my @re_args = qw(--re openbsd --json);
+my $re = ArpCLI::CLI::Args::extract_re(\@re_args);
+ok($re);
+ok('openbsd-7.6-amd64' =~ $re);
+is_deeply(\@re_args, ['--json'], 'extract_re strips --re pattern');
+
+my @bad_re = qw(--re '[unclosed');
+dies_like('extract_re invalid pattern', sub {
+    ArpCLI::CLI::Args::extract_re(\@bad_re);
+}, qr/invalid --re pattern/);
+
 my @thunder = qw(list --thunder --json);
 is(ArpCLI::CLI::Args::extract_thunder(\@thunder), 1);
 is_deeply(\@thunder, ['list', '--json'], 'extract_thunder strips --thunder only');

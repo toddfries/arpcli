@@ -48,6 +48,42 @@ sub extract_brief {
     return $brief;
 }
 
+sub extract_state {
+    my ($args) = @_;
+    my $state;
+    while (@$args) {
+        my $opt = shift @$args;
+        if ($opt eq '--state') {
+            die "arpcli: --state requires a value\n" unless @$args;
+            $state = shift @$args;
+        }
+        else {
+            unshift @$args, $opt;
+            last;
+        }
+    }
+    return $state;
+}
+
+sub extract_re {
+    my ($args) = @_;
+    my $re;
+    while (@$args) {
+        my $opt = shift @$args;
+        if ($opt eq '--re') {
+            die "arpcli: --re requires a pattern\n" unless @$args;
+            my $pat = shift @$args;
+            eval { $re = qr/$pat/i };
+            die "arpcli: invalid --re pattern: $pat ($@)\n" if $@;
+        }
+        else {
+            unshift @$args, $opt;
+            last;
+        }
+    }
+    return $re;
+}
+
 sub extract_thunder {
     my ($args) = @_;
     my $thunder = 0;

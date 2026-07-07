@@ -11,6 +11,7 @@ use ArpCLI::Error;
 use ArpCLI::Output;
 use ArpCLI::Plans::Format;
 use ArpCLI::CLI::Args;
+use ArpCLI::CLI::Filter;
 use ArpCLI::CLI::Format;
 use ArpCLI::Util qw(is_uuid flatten_os_templates format_specs format_bytes display_width);
 
@@ -23,15 +24,15 @@ aggregated list envelope for paginated resources).
 
 read commands:
   status [--range 30d] [--brief] [--json]   discover account services
-  servers list [--json]
+  servers list [--state running] [--re pattern] [--json]
   servers show <uuid> [--json]
   servers bandwidth <uuid> [--range 30d] [--json]
   servers billing <uuid> [--json]
   servers ssh-host-keys <uuid> [--json]
   locations [list] [--json]
   plans [list] [--json] [--thunder]
-  isos [list] [--json]
-  os-templates [list] [--json]
+  isos [list] [--re pattern] [--json]
+  os-templates [list] [--re pattern] [--json]
   dns-records list [--json]
   ssh-keys list [--json]
 
@@ -145,13 +146,24 @@ sub cmd_servers {
     my $sub = shift @args;
 
     if ($sub eq 'list') {
-        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        my $json  = ArpCLI::CLI::Args::extract_json(\@args);
+        my $state = ArpCLI::CLI::Args::extract_state(\@args);
+        my $re    = ArpCLI::CLI::Args::extract_re(\@args);
         ArpCLI::CLI::Args::ensure_empty(\@args, 'servers list');
         if ($json) {
-            ArpCLI::CLI::Format::print_json($client->servers->list_raw);
+            my $raw = ArpCLI::CLI::Filter::filter_servers_raw(
+                $client->servers->list_raw,
+                state => $state,
+                re    => $re,
+            );
+            ArpCLI::CLI::Format::print_json($raw);
             return 0;
         }
-        my $servers = $client->servers->list;
+        my $servers = ArpCLI::CLI::Filter::filter_servers(
+            $client->servers->list,
+            state => $state,
+            re    => $re,
+        );
         print_table([qw(LABEL UUID STATE PLAN IPv4)], $servers, sub {
             my ($s) = @_;
             ($s->{label}, $s->{uuid}, $s->{state}, $s->{plan}, $s->{primary_ipv4} // '-');
@@ -332,12 +344,16 @@ sub cmd_isos {
     my ($client, @args) = @_;
     ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'isos');
     my $json = ArpCLI::CLI::Args::extract_json(\@args);
+    my $re   = ArpCLI::CLI::Args::extract_re(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'isos list');
     if ($json) {
-        ArpCLI::CLI::Format::print_json($client->isos->list_raw);
+        ArpCLI::CLI::Format::print_json(
+            ArpCLI::CLI::Filter::filter_isos_raw($client->isos->list_raw, $re),
+        );
         return 0;
     }
-    for my $iso (sort @{ $client->isos->list }) {
+    my $isos = ArpCLI::CLI::Filter::filter_isos($client->isos->list, $re);
+    for my $iso (sort @$isos) {
         print "$iso\n";
     }
     return 0;
@@ -347,12 +363,16 @@ sub cmd_os_templates {
     my ($client, @args) = @_;
     ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'os-templates');
     my $json = ArpCLI::CLI::Args::extract_json(\@args);
+    my $re   = ArpCLI::CLI::Args::extract_re(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'os-templates list');
     if ($json) {
-        ArpCLI::CLI::Format::print_json($client->os_templates->list_raw);
+        ArpCLI::CLI::Format::print_json(
+            ArpCLI::CLI::Filter::filter_os_templates_raw($client->os_templates->list_raw, $re),
+        );
         return 0;
     }
     my $templates = flatten_os_templates($client->os_templates->list);
+    $templates = ArpCLI::CLI::Filter::filter_os_templates($templates, $re);
     print_table([qw(CODE FAMILY VERSION)], $templates, sub {
         my ($t) = @_;
         ($t->{code}, $t->{family}, $t->{version});

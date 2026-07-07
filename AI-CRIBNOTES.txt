@@ -1,4 +1,4 @@
-arpcli AI knowledge base (project-specific layer). Common behavior+values in aibootstrap/.
+arpcli AI knowledge base (project-specific layer). Common behavior+values in aibootstrap/ (synced 2026-07-07).
 
 SECRET POLICY
 - Never echo tokens/keys; redact in logs/commits.
@@ -8,14 +8,14 @@ SECRET POLICY
 LAYOUT
 bin/arpcli              CLI entry
 lib/ArpCLI/             Client, HTTP, API modules, CLI::Args/Format, Output, Plans::Format, RateLimit
-t/                      24 files, 375 tests (prove -lr t/)
+t/                      25 files, 406 tests (prove -lr t/)
 man/arpcli.1            man/arpcli.conf.5
 spec/                   OpenAPI, endpoint-map, registry
 EXAMPLES.md             defanged sample output
 future-options.md       roadmap
 
 CLI (exit 0 ok, 1 usage, 2 API, 3 config)
-Read: status [--brief] [--range 30d], servers list|show|bandwidth|billing|ssh-host-keys, plans/locations/isos/os-templates [list], dns-records list, ssh-keys list — all --json
+Read: status [--brief] [--range 30d], servers list [--state S] [--re PAT], servers show|bandwidth|billing|ssh-host-keys, plans/locations [list], isos/os-templates [list] [--re PAT], dns-records list, ssh-keys list — all --json
 Write: server actions + dns-records create|update|delete + ssh-keys create|delete
 Unwired: servers create
 --json: stdout JSON only; stderr diagnostics; scalar [] not null
@@ -31,7 +31,7 @@ RATE LIMIT (lib/ArpCLI/RateLimit.pm, hooked in HTTP->request)
 - Disable: ARPCLI_NO_RATE_LIMIT=1 or HARNESS_ACTIVE (prove)
 
 TEST
-prove -lr t/            375 tests, .proverc
+prove -lr t/            406 tests, .proverc
 ARPCLI_LIVE=1 prove -lr t/fuzz-live.t   optional live (needs creds)
 
 GOTCHAS
@@ -42,6 +42,7 @@ GOTCHAS
 - MockHTTP URL keys must match request path exactly
 - openapi sync: spec/ drives endpoint-map + registry; regen after API changes
 - API errors: {error: {code, message}} shape; Client maps to exit 2
+- List filters: --state exact (servers); --re case-insensitive regex (servers fields, isos filenames, os-templates code/family/version); client-side post-fetch via CLI::Filter
 
 FEATURE CHECKLIST
 [x] --json on all read commands
@@ -49,11 +50,12 @@ FEATURE CHECKLIST
 [x] ssh-keys create|delete (no API update endpoint)
 [x] client-side rate limit journal + Retry-After persistence
 [x] status --brief
+[x] list filters: servers --state, --re on servers/isos/os-templates
 [ ] servers create
 [ ] catalog show subcommands (if API adds)
 
 LIVE SNAPSHOT (2026-07-07)
-- 375 tests green
+- 406 tests green
 - rate limit + status --brief wired
 
 PASS-LOG
