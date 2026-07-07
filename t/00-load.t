@@ -10,6 +10,7 @@ my @modules = qw(
     ArpCLI::Error
     ArpCLI::Config
     ArpCLI::HTTP
+    ArpCLI::RateLimit
     ArpCLI::Util
     ArpCLI::Client
     ArpCLI::Output

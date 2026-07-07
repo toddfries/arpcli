@@ -5,6 +5,7 @@ use warnings;
 
 use JSON::PP ();
 use ArpCLI::Error;
+use ArpCLI::RateLimit;
 use ArpCLI::Util qw(redact_secrets redact_headers);
 
 use constant DEFAULT_MAX_RETRIES => 3;
@@ -12,6 +13,19 @@ use constant DEFAULT_RETRY_BASE => 1;
 
 sub new {
     my ($class, %args) = @_;
+    my $rate_limit = exists $args{rate_limit}
+        ? $args{rate_limit}
+        : (
+            !$ENV{ARPCLI_NO_RATE_LIMIT} && !$ENV{HARNESS_ACTIVE}
+                ? ArpCLI::RateLimit->new(
+                    key_id => ArpCLI::RateLimit::key_fingerprint($args{api_key}),
+                    (defined $args{rate_limit_path} ? (path => $args{rate_limit_path}) : ()),
+                    (defined $args{rate_limit_clock} ? (clock => $args{rate_limit_clock}) : ()),
+                    (defined $args{rate_limit_sleeper} ? (sleeper => $args{rate_limit_sleeper}) : ()),
+                )
+                : undef
+        );
+
     my $self = bless {
         base_url    => $args{base_url},
         api_key     => $args{api_key},
@@ -20,6 +34,7 @@ sub new {
         max_retries => exists $args{max_retries} ? $args{max_retries} : DEFAULT_MAX_RETRIES,
         retry_base  => $args{retry_base} // DEFAULT_RETRY_BASE,
         sleeper     => $args{sleeper} // sub { sleep $_[0] },
+        rate_limit  => $rate_limit,
         _sleep_total => 0,
     }, $class;
     return $self;
@@ -43,6 +58,8 @@ sub request {
     if (exists $args{body}) {
         $content = JSON::PP->new->utf8->encode($args{body});
     }
+
+    $self->{rate_limit}->acquire($method, $path) if $self->{rate_limit};
 
     my $attempts = 0;
     my $max      = $self->{max_retries};
