@@ -1,4 +1,4 @@
-.Dd $Mdocdate: July 6 2026 $
+.Dd $Mdocdate: July 7 2026 $
 .Dt ARPCLI 1
 .Os
 .Sh NAME
@@ -58,19 +58,27 @@ and
 Show billing breakdown.
 .It Cm servers Cm ssh-host-keys Ar uuid Op Fl -json
 List SSH host key fingerprints for a server.
-.It Cm locations Cm list Op Fl -json
+.It Cm locations Op Cm list Op Fl -json
 List data center locations.
-.It Cm plans Cm list Op Fl -json Op Fl -thunder
+.Cm list
+may be omitted when no other subcommands exist.
+.It Cm plans Op Cm list Op Fl -json Op Fl -thunder
 List VPS and ARP Thunder plans available to the account.
+.Cm list
+may be omitted.
 .Fl -thunder
 Include only plans whose
 .Va code
 starts with
 .Va thunder_ .
-.It Cm isos Cm list Op Fl -json
+.It Cm isos Op Cm list Op Fl -json
 List mountable ISO images.
-.It Cm os-templates Cm list Op Fl -json
+.Cm list
+may be omitted.
+.It Cm os-templates Op Cm list Op Fl -json
 List OS template codes.
+.Cm list
+may be omitted.
 .It Cm dns-records Cm list Op Fl -json
 List reverse DNS (PTR) records.
 .It Cm ssh-keys Cm list Op Fl -json

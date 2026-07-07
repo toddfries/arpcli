@@ -9,13 +9,16 @@ Compact briefing for AI agents working on **arpcli**. **Read this first.** Updat
 
 1. **Read** this file + skim `future-options.md` for scope.
 2. **Implement** focused changes only (no drive-by refactors).
-3. **Regress** before commit:
+3. **Update man pages** (`man/arpcli.1`, `man/arpcli.conf.5`) when CLI behavior, flags, or
+   config changes. Keep mdoc long options as `.Fl -json` not `.Fl json` (`t/man-flags.t`).
+4. **Regress** before commit:
    ```bash
-   prove -lr t/                    # expect ~279 tests, all PASS
+   prove -lr t/                    # expect ~280+ tests, all PASS
    ARPCLI_LIVE=1 prove -lr t/fuzz-live.t   # optional; needs ~/.config/arpcli/conf
    ```
-4. **Add regress** for every bug found, fixed, or feared (see [Regression policy](#regression-policy)).
-5. **Commit** when regress is green. **Do not leave completed work uncommitted.**
+5. **Add regress** for every bug found, fixed, or feared (see [Regression policy](#regression-policy)).
+6. **Commit** when regress is green. **Do not leave completed work uncommitted.**
+7. **Update this file** (Pass log + any new gotchas) when behavior or workflow changes.
 
 ### Commit messages
 
@@ -59,8 +62,11 @@ Config: `~/.config/arpcli/conf` — INI `[api]` with `base_url`, `api_key`.
 ### Read commands (`--json` supported)
 
 `status [--range 30d] [--json]` · `servers list|show|bandwidth|billing|ssh-host-keys` ·
-`locations list` · `plans list [--thunder]` · `isos list` · `os-templates list` ·
+`locations [list]` · `plans [list] [--thunder]` · `isos [list]` · `os-templates [list]` ·
 `dns-records list` · `ssh-keys list`
+
+Single-subcommand resources accept flags without `list` (`plans --json` ≡ `plans list --json`).
+Use `ArpCLI::CLI::Args::extract_list_subcommand`.
 
 ### Write commands (CLI wired; need **write**-scoped key)
 
@@ -187,9 +193,12 @@ or always return ref in list context only. (Historical bug in list methods.)
 Live write attempts return `type=insufficient_scope`, `status=403`,
 message `This API key does not have the 'write' scope`. Guard: `t/fuzz-scope.t`, `t/fuzz-live.t`.
 
-### `plans` with no subcommand
+### `plans` / catalog commands with no `list`
 
-Defaults to `list` (hits network). Not a bug; be aware in fuzz/manual testing.
+Default subcommand is `list`. Flags may precede it (`plans --json`, not `plans list --json`
+only). **Gotcha:** naive `shift @args` treats `--json` as a subcommand name — use
+`extract_list_subcommand`. Applies to `locations`, `plans`, `isos`, `os-templates`.
+Regress: `t/cli-args.t`, `t/fuzz.t`.
 
 ### `Test::Throws`
 
@@ -217,7 +226,7 @@ Types: `unauthorized`, `forbidden`, `insufficient_scope`, `not_found`, `invalid_
 
 1. API method in `lib/ArpCLI/API/<Resource>.pm` (+ `*_raw` if JSON output)
 2. Accessor in `Client.pm` if new resource
-3. Subcommand in `bin/arpcli` (+ `usage()` + `man/arpcli.1`)
+3. Subcommand in `bin/arpcli` (+ `usage()` + **`man/arpcli.1`** — required same pass)
 4. Mock test + fuzz case if CLI-facing
 5. `script/sync-openapi` if OpenAPI changed; keep `t/openapi-coverage.t` green
 6. Trim `future-options.md` when done
@@ -237,5 +246,6 @@ scope. Do not mutate production without explicit user approval.
 | Date | Summary |
 |------|---------|
 | 2026-07-06 | Initial crib notes. 279 offline tests; `t/fuzz*.t`, `t/cli-args.t`, `t/fuzz-scope.t`. `--json` on all sensible commands. Fuzz fixes: `-c` alone, status `™` wide chars. Man: `.Fl -json`. |
+| 2026-07-07 | Workflow: regress + manpages + commit + update crib each pass. Fix `plans --json` (and locations/isos/os-templates): `extract_list_subcommand` so flags are not parsed as subcommands. |
 
 <!-- AI: append a row when you change behavior, tests, or workflow. -->

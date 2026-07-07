@@ -28,10 +28,10 @@ read commands:
   servers bandwidth <uuid> [--range 30d] [--json]
   servers billing <uuid> [--json]
   servers ssh-host-keys <uuid> [--json]
-  locations list [--json]
-  plans list [--json] [--thunder]
-  isos list [--json]
-  os-templates list [--json]
+  locations [list] [--json]
+  plans [list] [--json] [--thunder]
+  isos [list] [--json]
+  os-templates [list] [--json]
   dns-records list [--json]
   ssh-keys list [--json]
 
@@ -277,8 +277,7 @@ sub _print_action_result {
 
 sub cmd_plans {
     my ($client, @args) = @_;
-    my $sub = shift(@args) // 'list';
-    die "arpcli: unknown plans subcommand: $sub\n" unless $sub eq 'list';
+    ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'plans');
 
     my $json    = ArpCLI::CLI::Args::extract_json(\@args);
     my $thunder = ArpCLI::CLI::Args::extract_thunder(\@args);
@@ -303,8 +302,7 @@ sub cmd_plans {
 
 sub cmd_locations {
     my ($client, @args) = @_;
-    my $sub = shift(@args) // 'list';
-    die "arpcli: unknown locations subcommand: $sub\n" unless $sub eq 'list';
+    ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'locations');
     my $json = ArpCLI::CLI::Args::extract_json(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'locations list');
     if ($json) {
@@ -319,8 +317,7 @@ sub cmd_locations {
 
 sub cmd_isos {
     my ($client, @args) = @_;
-    my $sub = shift(@args) // 'list';
-    die "arpcli: unknown isos subcommand: $sub\n" unless $sub eq 'list';
+    ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'isos');
     my $json = ArpCLI::CLI::Args::extract_json(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'isos list');
     if ($json) {
@@ -335,8 +332,7 @@ sub cmd_isos {
 
 sub cmd_os_templates {
     my ($client, @args) = @_;
-    my $sub = shift(@args) // 'list';
-    die "arpcli: unknown os-templates subcommand: $sub\n" unless $sub eq 'list';
+    ArpCLI::CLI::Args::extract_list_subcommand(\@args, 'os-templates');
     my $json = ArpCLI::CLI::Args::extract_json(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'os-templates list');
     if ($json) {
