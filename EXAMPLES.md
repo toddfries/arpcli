@@ -31,6 +31,27 @@ ID CODE               NAME             Price          Specs
 10 thunder_large      Large Plan       120.00  0.1644 200+500 16384 8  
 ```
 
+## plans --json
+
+`list` may be omitted on single-subcommand resources:
+
+```
+$ arpcli plans --json
+{
+   "plans" : [
+      {
+         "code" : "vps_small",
+         "id" : 1,
+         "name" : "VPS - Small Plan",
+         "prices" : { "hourly" : 0.01369863, "monthly" : 10 },
+         "specs" : [ ... ]
+      }
+   ]
+}
+```
+
+(JSON truncated; same shape as `plans list --json`.)
+
 ## plans list --thunder
 
 ```

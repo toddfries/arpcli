@@ -41,4 +41,17 @@ dies_like('ensure_empty unknown option', sub {
 my @ok_empty = qw();
 ArpCLI::CLI::Args::ensure_empty(\@ok_empty, 'test ctx');
 
+my @flag_first = qw(--json --thunder);
+is(ArpCLI::CLI::Args::extract_list_subcommand(\@flag_first, 'plans'), 'list');
+is_deeply(\@flag_first, ['--json', '--thunder'], 'extract_list_subcommand leaves flags');
+
+my @explicit = qw(list --json);
+is(ArpCLI::CLI::Args::extract_list_subcommand(\@explicit, 'plans'), 'list');
+is_deeply(\@explicit, ['--json']);
+
+my @bad_sub = qw(create);
+dies_like('extract_list_subcommand rejects create', sub {
+    ArpCLI::CLI::Args::extract_list_subcommand(\@bad_sub, 'plans');
+}, qr/unknown plans subcommand/);
+
 done_testing;
