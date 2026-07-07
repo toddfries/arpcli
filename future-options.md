@@ -32,7 +32,7 @@ Reference for later arpcli passes.
 - [ ] CI workflow running `prove -lr t`
 - [ ] Install target / package (OpenBSD port, Debian package)
 - [ ] Pod coverage in modules; `perldoc ArpCLI::Client`
-- [x] Live integration tests behind `ARPCLI_LIVE=1` guard (`t/fuzz-live.t`; see `AI-CRIBNOTES.md`)
+- [x] Live integration tests behind `ARPCLI_LIVE=1` guard (`t/fuzz-live.t`; see `AI-CRIBNOTES.txt`)
 
 ## Security
 

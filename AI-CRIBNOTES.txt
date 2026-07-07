@@ -1,0 +1,108 @@
+AI-CRIBNOTES.txt — arpcli agent briefing. Read first. Append PASS-LOG row when behavior/workflow changes.
+
+WORKFLOW (every pass)
+1 read this + skim future-options.md
+2 focused changes only
+3 update man/arpcli.1 + man/arpcli.conf.5 if CLI/config changed (.Fl -json not .Fl json)
+4 prove -lr t/  (~297 tests PASS)
+5 optional: ARPCLI_LIVE=1 prove -lr t/fuzz-live.t
+6 add regress for every bug/gotcha (see REGRESS map)
+7 commit when green; complete sentences; imperative subject
+8 update this file if new long-term facts
+
+never commit: api keys, ~/arpcode, ~/.config/arpcli/conf contents
+redact secrets: ArpCLI::Util::redact_secrets (t/redact.t)
+
+LAYOUT
+bin/arpcli              CLI dispatch, --json
+lib/ArpCLI/Client.pm    API compose, discover() for status
+lib/ArpCLI/HTTP.pm      JSON HTTP, ArpCLI::Error, 429/502 retry
+lib/ArpCLI/API/*.pm     resources; *_raw for API JSON shape
+lib/ArpCLI/CLI/Args.pm  extract_json, extract_range, extract_thunder, extract_list_subcommand
+lib/ArpCLI/CLI/Format.pm print_json
+lib/ArpCLI/Output.pm    status human output
+lib/ArpCLI/Plans/Format.pm grouped plans table
+t/lib/Test/MockHTTP.pm  inject as HTTP agent
+spec/openapi.yaml       canonical spec; script/sync-openapi
+.proverc                -Ivendor/lib/perl5 -It/lib -Ilib
+config                  ~/.config/arpcli/conf  [api] base_url api_key
+
+CLI READ (--json ok)
+status [--range 30d] [--json]
+servers list|show|bandwidth|billing|ssh-host-keys [--json]
+locations|plans|isos|os-templates [list] [--json]  (list optional; plans also --thunder)
+dns-records list|ssh-keys list [--json]
+catalog flags w/o list: use extract_list_subcommand (plans --json works)
+
+CLI WRITE (write-scoped key; --json ok)
+servers delete|boot|shutdown|poweroff|reset|change-iso|set-parameter
+
+API only, CLI unwired (fuzz: unknown subcommand)
+servers create; dns-records create|update|delete; ssh-keys create|delete
+wire => CLI + t/fuzz.t + t/fuzz-scope.t + man/arpcli.1
+
+EXIT CODES
+255  die "arpcli: ..."  (parse/usage)
+1    ArpCLI::Error      (api/config/uuid)
+0    success, -h
+
+--json
+read: raw API body; paginated lists => {items, meta:{pagination:{total_entries,aggregated:true}}}
+status --json: discover() hash
+multi --json stripped (t/cli-args.t)
+
+TEST
+prove -lr t/
+prove -lr t/fuzz.t t/fuzz-scope.t
+ARPCLI_LIVE=1 prove -lr t/fuzz-live.t
+
+t/00-load.t modules
+t/api.t client pagination list_raw
+t/http.t t/http-retry.t errors retry
+t/config.t t/edge.t config uuid
+t/cli-args.t t/cli-json.t flags json
+t/fuzz.t CLI misuse exit conventions
+t/fuzz-scope.t mock 403 all write paths + invalid_range
+t/fuzz-live.t live scope/range
+t/output.t status unicode
+t/man-flags.t mdoc --json
+t/plans-format.t plans table
+t/openapi-coverage.t registry
+t/sync-openapi.t spec sync
+t/redact.t secrets
+
+MOCK: key = "METHOD $full_url" incl query (?range=). Temp INI t/tmp-*-$$.ini for CLI qx tests.
+help tests: local $ENV{__ARPCLI_TEST_EXIT}=0
+
+REGRESS map
+CLI bad input -> t/fuzz.t
+write scope -> t/fuzz-scope.t (+fuzz-live if live)
+flags -> t/cli-args.t
+http -> t/http.t t/http-retry.t
+status/tables -> t/output.t t/plans-format.t
+man flags -> t/man-flags.t
+new API -> t/api.t
+openapi drift -> t/openapi-coverage.t
+fuzz: bad uuid, path traversal, missing args, doubled flags, unwired cmds, -c alone, injection
+
+GOTCHAS
+mdoc .Fl json => -json; use .Fl -json (t/man-flags.t)
+plans have TM; display_width + UTF-8 binmode (Output Plans Format bin/arpcli)
+-c /bad alone must error not usage exit 0 (t/fuzz.t)
+never return [] bare in scalar context (returns 0)
+read-only key writes: insufficient_scope 403 (fuzz-scope fuzz-live)
+shift @args eats --json as subcmd; use extract_list_subcommand
+Test::Throws custom; regex class arg fails; use dies_like + like $@
+sync-openapi needs vendor/lib/perl5 YAML::PP
+API errors: {error:{type,message}} types in manuals/errors.md
+
+FEATURE CHECKLIST
+API method + *_raw; Client accessor; bin/arpcli + usage + man; mock+fuzz; sync-openapi if spec; trim future-options.md; PASS-LOG row
+
+LIVE SNAPSHOT (read-only key 2026-07)
+3 servers 3 PTR 0 ssh keys; writes 403; no prod mutation without approval
+
+PASS-LOG
+2026-07-06 initial crib; 279 tests; --json all sensible; fuzz -c alone status TM; man .Fl -json
+2026-07-07 workflow+man each pass; extract_list_subcommand for plans/locations/isos/os-templates --json
+2026-07-07 reformulated AI-CRIBNOTES.txt token-efficient; removed .md
