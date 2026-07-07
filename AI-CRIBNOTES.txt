@@ -12,6 +12,10 @@ WORKFLOW (every pass)
 
 never commit: api keys, ~/arpcode, ~/.config/arpcli/conf contents
 redact secrets: ArpCLI::Util::redact_secrets (t/redact.t)
+EXAMPLES.md: defang like UUIDs — no real public IPs/hostnames/account IDs in docs.
+  IPv4 xxx.x.xxx.N  IPv6 xxxx:db8:xxxx::N  PTR xx.xxx.x.xxx.in-addr.arpa
+  hostnames *.example.com  UUIDs xxxxxxxx-xxxx-...  DNS ids xxxx
+  see EXAMPLES.md intro; never RFC5737 literals if they mirror real octets
 
 LAYOUT
 bin/arpcli              CLI dispatch, --json
@@ -108,3 +112,4 @@ PASS-LOG
 2026-07-07 workflow+man each pass; extract_list_subcommand for plans/locations/isos/os-templates --json
 2026-07-07 reformulated AI-CRIBNOTES.txt token-efficient; removed .md
 2026-07-08 dns-records create wired (ip hostname --json)
+2026-07-08 EXAMPLES.md IP obscuring policy; git history rewritten to remove literals
