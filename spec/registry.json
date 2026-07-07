@@ -42,7 +42,7 @@
          "summary" : "Create a server"
       },
       {
-         "cli" : null,
+         "cli" : "ssh-keys create",
          "http_method" : "POST",
          "method" : "create",
          "module" : "SshKeys",
@@ -72,7 +72,7 @@
          "summary" : "Delete a server"
       },
       {
-         "cli" : null,
+         "cli" : "ssh-keys delete <id>",
          "http_method" : "DELETE",
          "method" : "delete",
          "module" : "SshKeys",

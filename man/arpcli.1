@@ -119,6 +119,12 @@ is the PTR target (trailing dot added if omitted).
 Update the PTR target hostname of an existing DNS record.
 .It Cm dns-records Cm delete Ar id Op Fl -json
 Delete a DNS record.
+.It Cm ssh-keys Cm create Ar name Ar username Ar key Op Fl -json
+Add an SSH public key.
+.Ar key
+is the full OpenSSH public key string (quote if it contains spaces).
+.It Cm ssh-keys Cm delete Ar id Op Fl -json
+Delete an SSH key.
 .El
 .Sh OPTIONS
 .Bl -tag -width Ds

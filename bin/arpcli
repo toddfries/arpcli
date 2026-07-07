@@ -39,6 +39,8 @@ write commands (require write-scoped API key; --json prints API body):
   dns-records create <ip_address> <hostname> [--json]
   dns-records update <id> <hostname> [--json]
   dns-records delete <id> [--json]
+  ssh-keys create <name> <username> <key> [--json]
+  ssh-keys delete <id> [--json]
   servers delete <uuid> [--json]
   servers boot|shutdown|poweroff|reset <uuid> [--json]
   servers change-iso <uuid> <iso_file> [--json]
@@ -433,7 +435,45 @@ sub cmd_ssh_keys {
         });
         return 0;
     }
+    if ($sub eq 'create') {
+        my $name = shift @args or die "arpcli: ssh-keys create requires <name> <username> <key>\n";
+        my $user = shift @args or die "arpcli: ssh-keys create requires <name> <username> <key>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        my $key = join(' ', @args);
+        die "arpcli: ssh-keys create requires <name> <username> <key>\n" unless length $key;
+        my $rec = $client->ssh_keys->create({
+            name     => $name,
+            username => $user,
+            key      => $key,
+        });
+        return _print_ssh_key($rec, $json);
+    }
+    if ($sub eq 'delete') {
+        my $id = shift @args or die "arpcli: ssh-keys delete requires <id>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'ssh-keys delete');
+        my $res = $client->ssh_keys->delete($id);
+        if ($json) {
+            ArpCLI::CLI::Format::print_json($res->{data} // { status => 'deleted' });
+            return 0;
+        }
+        print "deleted\n";
+        return 0;
+    }
     die "arpcli: unknown ssh-keys subcommand: $sub\n";
+}
+
+sub _print_ssh_key {
+    my ($key, $json) = @_;
+    if ($json) {
+        ArpCLI::CLI::Format::print_json({ ssh_key => $key });
+        return 0;
+    }
+    for my $field (sort keys %$key) {
+        my $val = $key->{$field};
+        print "$field=", (defined $val ? $val : 'n/a'), "\n";
+    }
+    return 0;
 }
 
 sub print_table {
