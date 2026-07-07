@@ -22,6 +22,7 @@ sub new {
                     (defined $args{rate_limit_path} ? (path => $args{rate_limit_path}) : ()),
                     (defined $args{rate_limit_clock} ? (clock => $args{rate_limit_clock}) : ()),
                     (defined $args{rate_limit_sleeper} ? (sleeper => $args{rate_limit_sleeper}) : ()),
+                    (exists $args{verbose} ? (verbose => $args{verbose}) : ()),
                 )
                 : undef
         );
@@ -80,7 +81,16 @@ sub request {
         if ($status == 429 || $status == 502) {
             if ($attempts < $max) {
                 my $wait = _retry_delay($response, $attempts, $self->{retry_base});
-                $self->{sleeper}->($wait);
+                if ($status == 429 && $self->{rate_limit}) {
+                    $self->{rate_limit}->record_retry_after($wait);
+                    $self->{rate_limit}->wait(
+                        $wait,
+                        'API returned 429 rate_limited (Retry-After)',
+                    );
+                }
+                else {
+                    $self->{sleeper}->($wait);
+                }
                 $self->{_sleep_total} += $wait;
                 $attempts++;
                 next;

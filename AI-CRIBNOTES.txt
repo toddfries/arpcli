@@ -8,7 +8,7 @@ SECRET POLICY
 LAYOUT
 bin/arpcli              CLI entry
 lib/ArpCLI/             Client, HTTP, API modules, CLI::Args/Format, Output, Plans::Format
-t/                      23 files, 342 tests (prove -lr t/)
+t/                      24 files, 353 tests (prove -lr t/)
 man/arpcli.1            man/arpcli.conf.5
 spec/                   OpenAPI, endpoint-map, registry
 EXAMPLES.md             defanged sample output
@@ -32,7 +32,7 @@ GOTCHAS
 - MockHTTP URL keys must match request path exactly
 - openapi sync: spec/ drives endpoint-map + registry; regen after API changes
 - API errors: {error: {code, message}} shape; Client maps to exit 2
-- Rate limit: ~/.cache/arpcli/usage journal; 54/108/6 per 60s margin; ARPCLI_NO_RATE_LIMIT=1 for tests
+- Rate limit: ~/.cache/arpcli/usage journal; 54/108/6 per 60s margin; retry_after lines persist 429 Retry-After; -v warns before sleep(); ARPCLI_NO_RATE_LIMIT=1 for tests
 
 FEATURE CHECKLIST
 [x] --json on all read commands

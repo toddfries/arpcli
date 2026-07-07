@@ -48,6 +48,7 @@ write commands (require write-scoped API key; --json prints API body):
 
 options:
   -c path    configuration file (default: ~/.config/arpcli/conf)
+  -v         verbose (warn before rate-limit sleeps)
   -h         show this help
 USAGE
     exit ($ENV{__ARPCLI_TEST_EXIT} // 0);
@@ -64,6 +65,9 @@ sub main {
         elsif ($opt eq '-c') {
             die "arpcli: -c requires a path\n" unless @args;
             $config_path = shift @args;
+        }
+        elsif ($opt eq '-v' || $opt eq '--verbose') {
+            $ENV{ARPCLI_VERBOSE} = 1;
         }
         else {
             die "arpcli: unknown option: $opt\n";

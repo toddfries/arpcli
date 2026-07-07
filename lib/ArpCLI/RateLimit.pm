@@ -6,7 +6,6 @@ use warnings;
 use Fcntl qw(:flock SEEK_END);
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
-use Time::HiRes qw(time);
 
 # Documented limits (spec/openapi.yaml): 120/min IP, 60/min key, 7/min server create.
 # Client-side ceilings use a 10% margin on IP/key and reserve one server-create slot.
@@ -25,11 +24,13 @@ sub new {
         path      => $args{path} // USAGE_PATH,
         key_id    => $args{key_id} // 'default',
         clock     => $args{clock} // \&_now,
-        sleeper   => $args{sleeper} // sub { Time::HiRes::sleep($_[0]) },
+        sleeper   => $args{sleeper} // \&_default_sleeper,
         warn      => $args{warn} // sub { warn $_[0] },
+        verbose   => exists $args{verbose}
+            ? $args{verbose}
+            : _env_truthy($ENV{ARPCLI_VERBOSE}),
         _events   => [],
         _mtime    => 0,
-        _fh       => undef,
     }, $class;
     $self->_ensure_cache_dir;
     $self->_load_locked;
@@ -52,9 +53,29 @@ sub acquire {
         my ($fh) = @_;
         $self->_reload_if_stale($fh);
         $self->_prune;
+        $self->_wait_for_retry_after;
         $self->_wait_for_slot($bucket);
         $self->_record($fh, $bucket);
     });
+    return;
+}
+
+sub record_retry_after {
+    my ($self, $seconds) = @_;
+    return unless defined $seconds && $seconds > 0;
+    $self->_with_journal(sub {
+        my ($fh) = @_;
+        $self->_reload_if_stale($fh);
+        $self->_prune;
+        $self->_record_retry_after($fh, 0 + $seconds);
+    });
+    return;
+}
+
+sub wait {
+    my ($self, $seconds, $reason) = @_;
+    return unless defined $seconds && $seconds > 0;
+    $self->_sleep($seconds, $reason // 'waiting');
     return;
 }
 
@@ -63,12 +84,14 @@ sub counts {
     $self->_prune;
     my $general = $self->_count_bucket('general');
     my $create  = $self->_count_bucket('server_create');
+    my $retry   = $self->_active_retry_after;
     return {
-        general         => $general,
-        server_create   => $create,
-        key_remaining   => LIMIT_KEY - $general,
-        ip_remaining    => LIMIT_IP - $general,
+        general          => $general,
+        server_create    => $create,
+        key_remaining    => LIMIT_KEY - $general,
+        ip_remaining     => LIMIT_IP - $general,
         create_remaining => LIMIT_SERVER_CREATE - $create,
+        retry_after_until => $retry,
     };
 }
 
@@ -80,7 +103,21 @@ sub _bucket_for {
     return 'general';
 }
 
+sub _env_truthy {
+    my ($value) = @_;
+    return 0 unless defined $value;
+    return 0 if $value eq '' || $value eq '0';
+    return 1;
+}
+
 sub _now { time() }
+
+sub _default_sleeper {
+    my ($seconds) = @_;
+    return unless defined $seconds && $seconds > 0;
+    sleep(int($seconds + 0.999));
+    return;
+}
 
 sub _ensure_cache_dir {
     my ($self) = @_;
@@ -129,7 +166,7 @@ sub _load_from_handle {
             next if $line eq '' || $line =~ /\A#/;
             my ($ts, $key_id, $bucket) = split /\t/, $line, 3;
             next unless defined $bucket && $key_id eq $self->{key_id};
-            next unless $bucket =~ /\A(?:general|server_create)\z/;
+            next unless $bucket =~ /\A(?:general|server_create|retry_after)\z/;
             next unless defined $ts && $ts =~ /\A[0-9]+(?:\.[0-9]+)?\z/;
             push @events, { ts => 0 + $ts, bucket => $bucket };
         }
@@ -142,10 +179,25 @@ sub _load_from_handle {
 
 sub _prune {
     my ($self) = @_;
-    my $cutoff = $self->{clock}->() - WINDOW_SEC;
+    my $now    = $self->{clock}->();
+    my $cutoff = $now - WINDOW_SEC;
     my $events = $self->{_events};
-    @$events = grep { $_->{ts} >= $cutoff } @$events;
+    @$events = grep {
+        ($_->{bucket} eq 'retry_after' && $_->{ts} > $now)
+            || ($_->{bucket} ne 'retry_after' && $_->{ts} >= $cutoff)
+    } @$events;
     return;
+}
+
+sub _active_retry_after {
+    my ($self) = @_;
+    my $now = $self->{clock}->();
+    my $until;
+    for my $ev (@{ $self->{_events} }) {
+        next unless $ev->{bucket} eq 'retry_after' && $ev->{ts} > $now;
+        $until = $ev->{ts} if !defined $until || $ev->{ts} < $until;
+    }
+    return $until;
 }
 
 sub _count_bucket {
@@ -157,6 +209,21 @@ sub _count_bucket {
     }
     return $n if $bucket eq 'general';
     return scalar grep { $_->{bucket} eq $bucket } @{ $self->{_events} };
+}
+
+sub _wait_for_retry_after {
+    my ($self) = @_;
+    while (1) {
+        my $until = $self->_active_retry_after;
+        return unless defined $until;
+        my $wait = $until - $self->{clock}->();
+        return if $wait <= 0;
+        $self->_sleep(
+            $wait,
+            'honoring Retry-After cooldown from journal',
+        );
+        $self->_prune;
+    }
 }
 
 sub _wait_for_slot {
@@ -178,14 +245,11 @@ sub _wait_for_slot {
 
         return unless @waits;
         my $wait = (sort { $b <=> $a } @waits)[0];
-        $wait = 0.05 if $wait < 0.05;
-        $self->{warn}->(
-            sprintf(
-                "arpcli: rate limit margin reached; waiting %.2fs before next request\n",
-                $wait,
-            ),
+        $wait = 1 if $wait <= 0;
+        $self->_sleep(
+            $wait,
+            'rate limit margin reached; pausing before next request',
         );
-        $self->{sleeper}->($wait);
         $self->_prune;
     }
 }
@@ -206,12 +270,39 @@ sub _wait_until {
     return ($oldest + WINDOW_SEC) - $self->{clock}->() + 0.05;
 }
 
+sub _sleep {
+    my ($self, $seconds, $reason) = @_;
+    return unless defined $seconds && $seconds > 0;
+    $seconds = 0.05 if $seconds < 0.05;
+    if ($self->{verbose}) {
+        $self->{warn}->(
+            sprintf(
+                "arpcli: %s; sleeping %ds\n",
+                $reason,
+                int($seconds + 0.999),
+            ),
+        );
+    }
+    $self->{sleeper}->($seconds);
+    return;
+}
+
 sub _record {
     my ($self, $fh, $bucket) = @_;
     my $ts = $self->{clock}->();
     push @{ $self->{_events} }, { ts => $ts, bucket => $bucket };
     seek($fh, 0, SEEK_END) or die "arpcli: cannot seek rate-limit journal: $!\n";
     print {$fh} _format_line($ts, $self->{key_id}, $bucket);
+    $self->{_mtime} = (stat($self->{path}))[9] // $self->{_mtime};
+    return;
+}
+
+sub _record_retry_after {
+    my ($self, $fh, $seconds) = @_;
+    my $until = $self->{clock}->() + $seconds;
+    push @{ $self->{_events} }, { ts => $until, bucket => 'retry_after' };
+    seek($fh, 0, SEEK_END) or die "arpcli: cannot seek rate-limit journal: $!\n";
+    print {$fh} _format_line($until, $self->{key_id}, 'retry_after');
     $self->{_mtime} = (stat($self->{path}))[9] // $self->{_mtime};
     return;
 }

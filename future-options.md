@@ -17,7 +17,7 @@ Reference for later arpcli passes.
 - [ ] Detect API key scope by probing a write endpoint and caching result
 - [ ] ETag / If-None-Match if API adds caching headers
 - [ ] List plan add-ons / extras (no endpoint in OpenAPI v1; `GET /plans` returns only `vps_*` and `thunder_*` base plans with `prices{hourly,monthly}` — no add-on catalog)
-- [x] Client-side rate-limit journal at `~/.cache/arpcli/usage` (54 key / 108 IP / 6 server-create per 60s with margin; disable via `ARPCLI_NO_RATE_LIMIT=1`)
+- [x] Client-side rate-limit journal at `~/.cache/arpcli/usage` (54 key / 108 IP / 6 server-create per 60s with margin; `retry_after` journal lines from 429 Retry-After; `-v` warns before `sleep()`; disable via `ARPCLI_NO_RATE_LIMIT=1`)
 - [ ] Surface rate-limit quota headers if ARP adds them (live responses currently expose only `x-request-id`, `x-runtime`, `x-cache`)
 
 
