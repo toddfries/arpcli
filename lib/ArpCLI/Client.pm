@@ -66,14 +66,16 @@ sub discover {
     my $os_templates = eval { $self->os_templates->list } // {};
 
     my %server_detail;
-    for my $server (@$servers) {
-        my $uuid = $server->{uuid};
-        next unless defined $uuid && length $uuid;
-        $server_detail{$uuid} = {
-            bandwidth     => scalar(eval { $self->servers->bandwidth($uuid, range => $bandwidth_range) }),
-            billing       => scalar(eval { $self->servers->billing($uuid) }),
-            ssh_host_keys => scalar(eval { $self->servers->ssh_host_keys($uuid) }),
-        };
+    unless ($args{brief}) {
+        for my $server (@$servers) {
+            my $uuid = $server->{uuid};
+            next unless defined $uuid && length $uuid;
+            $server_detail{$uuid} = {
+                bandwidth     => scalar(eval { $self->servers->bandwidth($uuid, range => $bandwidth_range) }),
+                billing       => scalar(eval { $self->servers->billing($uuid) }),
+                ssh_host_keys => scalar(eval { $self->servers->ssh_host_keys($uuid) }),
+            };
+        }
     }
 
     return {

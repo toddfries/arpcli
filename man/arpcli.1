@@ -35,10 +35,13 @@ return all pages in one envelope with
 .Va meta.pagination.aggregated .
 .Sh READ COMMANDS
 .Bl -tag -width Ds
-.It Cm status Op Fl -range Ar 30d Op Fl -json
+.It Cm status Op Fl -range Ar 30d Op Fl -brief Op Fl -json
 Discover all readable account services and emit a consolidated report.
 The default bandwidth range is
 .Ar 30d .
+.Fl -brief
+prints service counts and the server summary table only, skipping
+per-server bandwidth, billing, and catalog listings (fewer API calls).
 .It Cm servers Cm list Op Fl -json
 List servers in a fixed-width table.
 .It Cm servers Cm show Ar uuid Op Fl -json

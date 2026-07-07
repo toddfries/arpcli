@@ -79,4 +79,21 @@ like($buf, qr/openbsd-7\.6-amd64/);
 like($buf, qr/ARP Thunder/, 'status output includes trademark plan name');
 is(scalar @warnings, 0, 'status output emits no wide-character warnings');
 
+$buf = '';
+open $fh, '>', \$buf or die $!;
+@warnings = ();
+{
+    local $SIG{__WARN__} = sub { push @warnings, $_[0] };
+    ArpCLI::Output->new(fh => $fh)->print_discovery($data, brief => 1);
+}
+close $fh;
+
+like($buf, qr/arp\.account/, 'brief output has account counts');
+like($buf, qr/arp\.servers/, 'brief output has server table');
+like($buf, qr/web-01/, 'brief output lists server label');
+unlike($buf, qr/server\.52326bc0/, 'brief output omits per-server detail');
+unlike($buf, qr/arp\.dns_records/, 'brief output omits dns section');
+unlike($buf, qr/arp\.catalog/, 'brief output omits catalog section');
+is(scalar @warnings, 0, 'brief output emits no wide-character warnings');
+
 done_testing;

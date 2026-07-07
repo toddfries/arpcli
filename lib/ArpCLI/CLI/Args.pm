@@ -39,6 +39,15 @@ sub extract_list_subcommand {
     return $sub;
 }
 
+sub extract_brief {
+    my ($args) = @_;
+    my $brief = 0;
+    @$args = grep {
+        if ($_ eq '--brief') { $brief = 1; 0 } else { 1 }
+    } @$args;
+    return $brief;
+}
+
 sub extract_thunder {
     my ($args) = @_;
     my $thunder = 0;

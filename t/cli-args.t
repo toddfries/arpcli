@@ -29,6 +29,10 @@ dies_like('--range without value', sub {
     ArpCLI::CLI::Args::extract_range(\@missing_range);
 }, qr/--range requires a value/);
 
+my @brief = qw(--brief --json);
+is(ArpCLI::CLI::Args::extract_brief(\@brief), 1);
+is_deeply(\@brief, ['--json'], 'extract_brief strips --brief only');
+
 my @thunder = qw(list --thunder --json);
 is(ArpCLI::CLI::Args::extract_thunder(\@thunder), 1);
 is_deeply(\@thunder, ['list', '--json'], 'extract_thunder strips --thunder only');

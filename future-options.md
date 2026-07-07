@@ -23,7 +23,7 @@ Reference for later arpcli passes.
 
 ## Output
 
-- [ ] `status --brief` summary only (counts + server table)
+- [x] `status --brief` summary only (counts + server table; skips per-server detail API calls)
 - [ ] Export to YAML or JSON for ansible/terraform consumption
 - [ ] Match dashboard billing page layout more closely
 - [ ] Human-readable relative timestamps (created_at → "16 years ago")

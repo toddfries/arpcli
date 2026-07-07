@@ -88,6 +88,16 @@ my $data = $client->discover;
 is(scalar @{ $data->{servers} }, 2);
 ok(exists $data->{server_detail}{$uuid});
 
+my $before_brief = scalar @{ $mock->requests };
+my $brief = $client->discover(brief => 1);
+is(scalar @{ $brief->{servers} }, 2, 'brief discover still lists servers');
+is(keys %{ $brief->{server_detail} }, 0, 'brief discover omits server_detail');
+for my $req (@{ $mock->requests }[$before_brief .. $#{ $mock->requests }]) {
+    unlike($req->{url}, qr{/bandwidth|/billing|/ssh_host_keys},
+        'brief discover does not fetch per-server detail');
+}
+ok((scalar @{ $mock->requests } - $before_brief) < 10, 'brief discover avoids per-server detail calls');
+
 my $servers_raw = $client->servers->list_raw;
 is(scalar @{ $servers_raw->{servers} }, 2);
 ok($servers_raw->{meta}{pagination}{aggregated});

@@ -22,7 +22,7 @@ Most read commands accept --json to print the API response body (or an
 aggregated list envelope for paginated resources).
 
 read commands:
-  status [--range 30d] [--json]       discover account services
+  status [--range 30d] [--brief] [--json]   discover account services
   servers list [--json]
   servers show <uuid> [--json]
   servers bandwidth <uuid> [--range 30d] [--json]
@@ -96,14 +96,18 @@ sub main {
 sub cmd_status {
     my ($client, @args) = @_;
     my $json  = ArpCLI::CLI::Args::extract_json(\@args);
+    my $brief = ArpCLI::CLI::Args::extract_brief(\@args);
     my $range = ArpCLI::CLI::Args::extract_range(\@args);
     ArpCLI::CLI::Args::ensure_empty(\@args, 'status');
-    my $data = $client->discover(bandwidth_range => $range);
+    my $data = $client->discover(
+        bandwidth_range => $range,
+        brief           => $brief,
+    );
     if ($json) {
         ArpCLI::CLI::Format::print_json($data);
         return 0;
     }
-    ArpCLI::Output->new->print_discovery($data);
+    ArpCLI::Output->new->print_discovery($data, brief => $brief);
     return 0;
 }
 

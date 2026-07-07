@@ -15,10 +15,29 @@ sub new {
 sub fh { $_[0]->{fh} }
 
 sub print_discovery {
-    my ($self, $data) = @_;
+    my ($self, $data, %opts) = @_;
     my $fh = $self->fh;
     binmode $fh, ':encoding(UTF-8)' if ref($fh) eq 'GLOB';
 
+    $self->_section_account($fh, $data);
+
+    $self->_blank($fh);
+    $self->_section_servers($fh, $data, brief => $opts{brief});
+    return if $opts{brief};
+
+    $self->_blank($fh);
+    $self->_section_dns($fh, $data);
+    $self->_blank($fh);
+    $self->_section_ssh_keys($fh, $data);
+    $self->_blank($fh);
+    my $templates = flatten_os_templates($data->{os_templates});
+    $self->_section_catalog($fh, $data, $templates);
+    return;
+}
+
+sub _section_account {
+    my ($self, $fh, $data) = @_;
+    my $templates = flatten_os_templates($data->{os_templates});
     $self->_line($fh, 'arp.account');
     $self->_line($fh, '  services.servers.count', scalar @{ $data->{servers} // [] });
     $self->_line($fh, '  services.dns_records.count', scalar @{ $data->{dns_records} // [] });
@@ -26,22 +45,12 @@ sub print_discovery {
     $self->_line($fh, '  catalog.locations.count', scalar @{ $data->{locations} // [] });
     $self->_line($fh, '  catalog.plans.count', scalar @{ $data->{plans} // [] });
     $self->_line($fh, '  catalog.isos.count', scalar @{ $data->{isos} // [] });
-    my $templates = flatten_os_templates($data->{os_templates});
     $self->_line($fh, '  catalog.os_templates.count', scalar @$templates);
-
-    $self->_blank($fh);
-    $self->_section_servers($fh, $data);
-    $self->_blank($fh);
-    $self->_section_dns($fh, $data);
-    $self->_blank($fh);
-    $self->_section_ssh_keys($fh, $data);
-    $self->_blank($fh);
-    $self->_section_catalog($fh, $data, $templates);
     return;
 }
 
 sub _section_servers {
-    my ($self, $fh, $data) = @_;
+    my ($self, $fh, $data, %opts) = @_;
     $self->_line($fh, 'arp.servers');
     my $servers = $data->{servers} // [];
     return $self->_line($fh, '  (none)') unless @$servers;
@@ -64,6 +73,8 @@ sub _section_servers {
             ($r->{label}, $r->{uuid}, $r->{state}, $r->{plan}, $r->{os}, $r->{ipv4}, $r->{ipv6});
         },
     );
+
+    return if $opts{brief};
 
     for my $s (sort { ($a->{label} // '') cmp ($b->{label} // '') } @$servers) {
         my $uuid = $s->{uuid};
