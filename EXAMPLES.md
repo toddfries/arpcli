@@ -302,6 +302,24 @@ $ arpcli dns-records create xxx.x.xxx.10 ns3.example.com --json
 }
 ```
 
+## dns-records update
+
+```
+$ arpcli dns-records update xxxx ns3-renamed.example.com
+content=ns3-renamed.example.com.
+domain=xxx.x.xxx.in-addr.arpa
+id=xxxx
+name=xx.xxx.x.xxx.in-addr.arpa
+type=PTR
+```
+
+## dns-records delete
+
+```
+$ arpcli dns-records delete xxxx
+deleted
+```
+
 ## read-only key vs write
 
 Write commands (`servers boot`, `dns-records create`, etc.) return HTTP 403 when

@@ -65,7 +65,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "dns-records delete <id>",
       "http_method" : "DELETE",
       "method" : "delete",
       "module" : "DnsRecords",
@@ -299,7 +299,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "dns-records update <id> <hostname>",
       "http_method" : "PATCH",
       "method" : "update",
       "module" : "DnsRecords",

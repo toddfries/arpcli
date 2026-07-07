@@ -37,6 +37,8 @@ read commands:
 
 write commands (require write-scoped API key; --json prints API body):
   dns-records create <ip_address> <hostname> [--json]
+  dns-records update <id> <hostname> [--json]
+  dns-records delete <id> [--json]
   servers delete <uuid> [--json]
   servers boot|shutdown|poweroff|reset <uuid> [--json]
   servers change-iso <uuid> <iso_file> [--json]
@@ -375,17 +377,42 @@ sub cmd_dns_records {
             ip_address => $ip,
             hostname   => $host,
         });
+        return _print_dns_record($rec, $json);
+    }
+    if ($sub eq 'update') {
+        my $id = shift @args or die "arpcli: dns-records update requires <id> <hostname>\n";
+        my $host = shift @args or die "arpcli: dns-records update requires <id> <hostname>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'dns-records update');
+        my $rec = $client->dns_records->update($id, { hostname => $host });
+        return _print_dns_record($rec, $json);
+    }
+    if ($sub eq 'delete') {
+        my $id = shift @args or die "arpcli: dns-records delete requires <id>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'dns-records delete');
+        my $res = $client->dns_records->delete($id);
         if ($json) {
-            ArpCLI::CLI::Format::print_json({ dns_record => $rec });
+            ArpCLI::CLI::Format::print_json($res->{data} // { status => 'deleted' });
             return 0;
         }
-        for my $key (sort keys %$rec) {
-            my $val = $rec->{$key};
-            print "$key=", (defined $val ? $val : 'n/a'), "\n";
-        }
+        print "deleted\n";
         return 0;
     }
     die "arpcli: unknown dns-records subcommand: $sub\n";
+}
+
+sub _print_dns_record {
+    my ($rec, $json) = @_;
+    if ($json) {
+        ArpCLI::CLI::Format::print_json({ dns_record => $rec });
+        return 0;
+    }
+    for my $key (sort keys %$rec) {
+        my $val = $rec->{$key};
+        print "$key=", (defined $val ? $val : 'n/a'), "\n";
+    }
+    return 0;
 }
 
 sub cmd_ssh_keys {

@@ -1,4 +1,4 @@
-.Dd $Mdocdate: July 8 2026 $
+.Dd $Mdocdate: July 9 2026 $
 .Dt ARPCLI 1
 .Os
 .Sh NAME
@@ -105,16 +105,20 @@ Queue a hard reset.
 Mount a different ISO image.
 .It Cm servers Cm set-parameter Ar uuid Ar param Ar value Op Fl -json
 Change an advanced server parameter.
-.It Cm dns-records Cm create Ar ip_address Ar hostname Op Fl -json
-Create a reverse PTR record for an IP address owned by your account.
-.Ar hostname
-is the PTR target (trailing dot added if omitted).
 .Ar param
 must be one of
 .Cm bios-serial ,
 .Cm boot-menu ,
 or
 .Cm boot-device .
+.It Cm dns-records Cm create Ar ip_address Ar hostname Op Fl -json
+Create a reverse PTR record for an IP address owned by your account.
+.Ar hostname
+is the PTR target (trailing dot added if omitted).
+.It Cm dns-records Cm update Ar id Ar hostname Op Fl -json
+Update the PTR target hostname of an existing DNS record.
+.It Cm dns-records Cm delete Ar id Op Fl -json
+Delete a DNS record.
 .El
 .Sh OPTIONS
 .Bl -tag -width Ds

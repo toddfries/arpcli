@@ -4,7 +4,7 @@ WORKFLOW (every pass)
 1 read this + skim future-options.md
 2 focused changes only
 3 update man/arpcli.1 + man/arpcli.conf.5 if CLI/config changed (.Fl -json not .Fl json)
-4 prove -lr t/  (~297 tests PASS)
+4 prove -lr t/  (~316 tests PASS)
 5 optional: ARPCLI_LIVE=1 prove -lr t/fuzz-live.t
 6 add regress for every bug/gotcha (see REGRESS map)
 7 commit when green; complete sentences; imperative subject
@@ -40,10 +40,10 @@ catalog flags w/o list: use extract_list_subcommand (plans --json works)
 
 CLI WRITE (write-scoped key; --json ok)
 servers delete|boot|shutdown|poweroff|reset|change-iso|set-parameter
-dns-records create <ip> <hostname> [--json]
+dns-records create <ip> <hostname>|update <id> <hostname>|delete <id> [--json]
 
 API only, CLI unwired (fuzz: unknown subcommand)
-servers create; dns-records update|delete; ssh-keys create|delete
+servers create; ssh-keys create|delete
 wire => CLI + t/fuzz.t + t/fuzz-scope.t + man/arpcli.1
 
 EXIT CODES
@@ -113,3 +113,4 @@ PASS-LOG
 2026-07-07 reformulated AI-CRIBNOTES.txt token-efficient; removed .md
 2026-07-08 dns-records create wired (ip hostname --json)
 2026-07-08 EXAMPLES.md IP obscuring policy; git history rewritten to remove literals
+2026-07-09 dns-records update|delete wired; man set-parameter text fix

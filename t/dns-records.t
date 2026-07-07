@@ -4,7 +4,6 @@ use warnings;
 use Test::More;
 use lib 't/lib';
 use lib 'lib';
-use Test::Throws qw(throws_ok);
 
 use JSON::PP;
 use ArpCLI::Client;
@@ -26,6 +25,22 @@ my $mock = Test::MockHTTP->new(
                 },
             }),
         },
+        "PATCH $base/api/v1/dns_records/42" => {
+            status  => 200,
+            content => JSON::PP->new->encode({
+                dns_record => {
+                    id       => 42,
+                    name     => '2.0.0.10.in-addr.arpa',
+                    content  => 'renamed.example.com.',
+                    domain   => '0.0.10.in-addr.arpa',
+                    type     => 'PTR',
+                },
+            }),
+        },
+        "DELETE $base/api/v1/dns_records/42" => {
+            status  => 204,
+            content => '',
+        },
     },
 );
 
@@ -46,5 +61,17 @@ my $req = $mock->requests->[-1];
 is($req->{method}, 'POST');
 like($req->{content}, qr/"ip_address"\s*:\s*"10\.0\.0\.2"/);
 like($req->{content}, qr/"hostname"\s*:\s*"server\.example\.com"/);
+
+my $updated = $client->dns_records->update(42, { hostname => 'renamed.example.com' });
+is($updated->{id}, 42);
+is($updated->{content}, 'renamed.example.com.');
+$req = $mock->requests->[-1];
+is($req->{method}, 'PATCH');
+like($req->{content}, qr/"hostname"\s*:\s*"renamed\.example\.com"/);
+
+my $del = $client->dns_records->delete(42);
+is($del->{status}, 204);
+ok(!defined $del->{data});
+is($mock->requests->[-1]{method}, 'DELETE');
 
 done_testing;
