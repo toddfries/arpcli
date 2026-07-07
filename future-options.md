@@ -5,7 +5,7 @@ Reference for later arpcli passes.
 ## CLI enhancements
 
 - [ ] `servers create` with flags for plan_id, os_template, location, ssh_key_ids (API module exists; CLI not wired)
-- [ ] `dns-records create|update|delete` subcommands with validation messages (API module exists; CLI not wired)
+- [x] `dns-records create` (`dns-records update|delete` still unwired)
 - [ ] `ssh-keys create|delete` subcommands (API module exists; CLI not wired)
 
 - [ ] Filter flags: `servers list --state running`, `isos list --grep openbsd`

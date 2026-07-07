@@ -20,7 +20,7 @@ changeIso:
   tags:
   - Server Actions
 createDnsRecord:
-  cli: null
+  cli: dns-records create
   http_method: POST
   method: create
   module: DnsRecords

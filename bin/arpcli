@@ -36,6 +36,7 @@ read commands:
   ssh-keys list [--json]
 
 write commands (require write-scoped API key; --json prints API body):
+  dns-records create <ip_address> <hostname> [--json]
   servers delete <uuid> [--json]
   servers boot|shutdown|poweroff|reset <uuid> [--json]
   servers change-iso <uuid> <iso_file> [--json]
@@ -363,6 +364,25 @@ sub cmd_dns_records {
             my ($r) = @_;
             ($r->{id}, $r->{name}, $r->{content}, $r->{domain});
         });
+        return 0;
+    }
+    if ($sub eq 'create') {
+        my $ip = shift @args or die "arpcli: dns-records create requires <ip_address> <hostname>\n";
+        my $host = shift @args or die "arpcli: dns-records create requires <ip_address> <hostname>\n";
+        my $json = ArpCLI::CLI::Args::extract_json(\@args);
+        ArpCLI::CLI::Args::ensure_empty(\@args, 'dns-records create');
+        my $rec = $client->dns_records->create({
+            ip_address => $ip,
+            hostname   => $host,
+        });
+        if ($json) {
+            ArpCLI::CLI::Format::print_json({ dns_record => $rec });
+            return 0;
+        }
+        for my $key (sort keys %$rec) {
+            my $val = $rec->{$key};
+            print "$key=", (defined $val ? $val : 'n/a'), "\n";
+        }
         return 0;
     }
     die "arpcli: unknown dns-records subcommand: $sub\n";

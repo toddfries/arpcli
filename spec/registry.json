@@ -22,7 +22,7 @@
          "summary" : "Change mounted ISO"
       },
       {
-         "cli" : null,
+         "cli" : "dns-records create",
          "http_method" : "POST",
          "method" : "create",
          "module" : "DnsRecords",

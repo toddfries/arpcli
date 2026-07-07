@@ -36,9 +36,10 @@ catalog flags w/o list: use extract_list_subcommand (plans --json works)
 
 CLI WRITE (write-scoped key; --json ok)
 servers delete|boot|shutdown|poweroff|reset|change-iso|set-parameter
+dns-records create <ip> <hostname> [--json]
 
 API only, CLI unwired (fuzz: unknown subcommand)
-servers create; dns-records create|update|delete; ssh-keys create|delete
+servers create; dns-records update|delete; ssh-keys create|delete
 wire => CLI + t/fuzz.t + t/fuzz-scope.t + man/arpcli.1
 
 EXIT CODES
@@ -106,3 +107,4 @@ PASS-LOG
 2026-07-06 initial crib; 279 tests; --json all sensible; fuzz -c alone status TM; man .Fl -json
 2026-07-07 workflow+man each pass; extract_list_subcommand for plans/locations/isos/os-templates --json
 2026-07-07 reformulated AI-CRIBNOTES.txt token-efficient; removed .md
+2026-07-08 dns-records create wired (ip hostname --json)

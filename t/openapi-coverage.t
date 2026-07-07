@@ -19,7 +19,6 @@ ok(@endpoints >= 1);
 
 my @known_missing_cli = qw(
     createServer
-    createDnsRecord
     updateDnsRecord
     deleteDnsRecord
     createSshKey
