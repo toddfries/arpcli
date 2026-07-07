@@ -1,9 +1,10 @@
 # arpcli examples
 
 Sample command output for documentation. Account-specific fields are **defanged**:
-UUIDs use `xxxx` placeholders, hostnames use `example.com`, and IPv4/IPv6 use
-documentation addresses (`xxx.x.xxx.0/24`, `2001:db8::/32`). Catalog data
-(plans, locations, ISOs, OS templates) is real public API shape.
+UUIDs use `xxxx` placeholders, hostnames use `example.com`, IPv4 uses `xxx.x.xxx.N`,
+IPv6 uses `xxxx:db8:xxxx::N`, and PTR/ARPA names use matching `xx.xxx.x.xxx` octets.
+Never put real public IPs in examples (same rule as UUIDs). Catalog data (plans,
+locations, ISOs, OS templates) is real public API shape.
 
 ---
 
@@ -31,6 +32,27 @@ ID CODE               NAME             Price          Specs
 10 thunder_large      Large Plan       120.00  0.1644 200+500 16384 8  
 ```
 
+## plans --json
+
+`list` may be omitted on single-subcommand resources:
+
+```
+$ arpcli plans --json
+{
+   "plans" : [
+      {
+         "code" : "vps_small",
+         "id" : 1,
+         "name" : "VPS - Small Plan",
+         "prices" : { "hourly" : 0.01369863, "monthly" : 10 },
+         "specs" : [ ... ]
+      }
+   ]
+}
+```
+
+(JSON truncated; same shape as `plans list --json`.)
+
 ## plans list --thunder
 
 ```
@@ -51,7 +73,7 @@ ID CODE               NAME             Price          Specs
 
 ```
 $ arpcli servers list
-LABEL           UUID                                 STATE   PLAN              IPv4         
+LABEL              UUID                                 STATE   PLAN              IPv4         
 relay1.example.com xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  xxx.x.xxx.10
 ns3.example.com    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Custom Plan xxx.x.xxx.11
 mail.example.com   xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  xxx.x.xxx.12
@@ -78,8 +100,8 @@ $ arpcli servers list --json
          "location" : "LAX",
          "os_template" : "openbsd-7.6-amd64",
          "plan" : "VPS - Small Plan",
-         "primary_ipv4" : "xxx.x.xxx.xx",
-         "primary_ipv6" : "2001:db8:1234::2",
+         "primary_ipv4" : "xxx.x.xxx.10",
+         "primary_ipv6" : "xxxx:db8:xxxx::2",
          "provisioning_status" : "active",
          "specs" : [
             { "name" : "CPU", "quantity" : "1.0", "unit" : "core" },
@@ -107,8 +129,8 @@ label=relay1.example.com
 location=LAX
 os_template=openbsd-7.6-amd64
 plan=VPS - Small Plan
-primary_ipv4=xxx.x.xxx.xx
-primary_ipv6=2001:db8:1234::2
+primary_ipv4=xxx.x.xxx.10
+primary_ipv6=xxxx:db8:xxxx::2
 provisioning_status=active
 specs=CPU=1core, RAM=256MB, Storage=10GB
 state=running
@@ -164,9 +186,9 @@ rocky-10.1-amd64           rocky     10.1 (Red Quartz)
 ```
 $ arpcli dns-records list
 ID    NAME                      CONTENT            DOMAIN                
-3596  10.113.0.203.in-addr.arpa ns3.example.com.   113.0.203.in-addr.arpa
-11467 11.113.0.203.in-addr.arpa mail.example.com.  113.0.203.in-addr.arpa
-17545 12.113.0.203.in-addr.arpa relay1.example.com. 113.0.203.in-addr.arpa
+xxxx  xx.xxx.x.xxx.in-addr.arpa ns3.example.com.   xxx.x.xxx.in-addr.arpa
+xxxx  xx.xxx.x.xxx.in-addr.arpa mail.example.com.  xxx.x.xxx.in-addr.arpa
+xxxx  xx.xxx.x.xxx.in-addr.arpa relay1.example.com. xxx.x.xxx.in-addr.arpa
 ```
 
 ## ssh-keys list
@@ -194,10 +216,10 @@ arp.account
   catalog.os_templates.count=24
 
 arp.servers
-  LABEL            UUID                                 STATE   PLAN              OS                IPv4         IPv6           
-  mail.example.com 22264ad0-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  openbsd-7.6-amd64 xxx.x.xxx.12 -              
-  ns3.example.com  c767c910-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Custom Plan openbsd-7.6-amd64 xxx.x.xxx.11 2001:db8:af98::1
-  relay1.example.com xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  openbsd-7.6-amd64 xxx.x.xxx.10 2001:db8:1800::2
+  LABEL              UUID                                 STATE   PLAN              OS                IPv4         IPv6           
+  mail.example.com   xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  openbsd-7.6-amd64 xxx.x.xxx.12 -              
+  ns3.example.com    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Custom Plan openbsd-7.6-amd64 xxx.x.xxx.11 xxxx:db8:xxxx::1
+  relay1.example.com xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx running VPS - Small Plan  openbsd-7.6-amd64 xxx.x.xxx.10 xxxx:db8:xxxx::2
 
   server.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     billing_interval=monthly
@@ -209,7 +231,7 @@ arp.servers
     os_template=openbsd-7.6-amd64
     plan=VPS - Small Plan
     primary_ipv4=xxx.x.xxx.10
-    primary_ipv6=2001:db8:1800::2
+    primary_ipv6=xxxx:db8:xxxx::2
     provisioning_status=active
     specs=CPU=1core, RAM=256MB, Storage=10GB
     state=running
@@ -229,9 +251,9 @@ arp.servers
 
 arp.dns_records
   ID    ARPA_NAME                 CONTENT              DOMAIN                
-  xxxx  xx.xxx.0.203.in-addr.arpa ns3.example.com.     xxx.0.203.in-addr.arpa
-  xxxxx xx.xxx.0.203.in-addr.arpa mail.example.com.    xxx.0.203.in-addr.arpa
-  xxxxx xx.xxx.0.203.in-addr.arpa relay1.example.com.  xxx.0.203.in-addr.arpa
+  xxxx  xx.xxx.x.xxx.in-addr.arpa ns3.example.com.     xxx.x.xxx.in-addr.arpa
+  xxxx  xx.xxx.x.xxx.in-addr.arpa mail.example.com.    xxx.x.xxx.in-addr.arpa
+  xxxx  xx.xxx.x.xxx.in-addr.arpa relay1.example.com.  xxx.x.xxx.in-addr.arpa
 
 arp.ssh_keys
   (none)
@@ -255,6 +277,48 @@ arp.catalog
 complete catalog listings.)
 
 ---
+
+## dns-records create
+
+```
+$ arpcli dns-records create xxx.x.xxx.10 ns3.example.com
+content=ns3.example.com.
+domain=xxx.x.xxx.in-addr.arpa
+id=xxxx
+name=xx.xxx.x.xxx.in-addr.arpa
+type=PTR
+```
+
+```
+$ arpcli dns-records create xxx.x.xxx.10 ns3.example.com --json
+{
+   "dns_record" : {
+      "content" : "ns3.example.com.",
+      "domain" : "xxx.x.xxx.in-addr.arpa",
+      "id" : "xxxx",
+      "name" : "xx.xxx.x.xxx.in-addr.arpa",
+      "type" : "PTR"
+   }
+}
+```
+
+## dns-records update
+
+```
+$ arpcli dns-records update xxxx ns3-renamed.example.com
+content=ns3-renamed.example.com.
+domain=xxx.x.xxx.in-addr.arpa
+id=xxxx
+name=xx.xxx.x.xxx.in-addr.arpa
+type=PTR
+```
+
+## dns-records delete
+
+```
+$ arpcli dns-records delete xxxx
+deleted
+```
 
 ## read-only key vs write
 

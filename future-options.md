@@ -5,8 +5,8 @@ Reference for later arpcli passes.
 ## CLI enhancements
 
 - [ ] `servers create` with flags for plan_id, os_template, location, ssh_key_ids (API module exists; CLI not wired)
-- [ ] `dns-records create|update|delete` subcommands with validation messages (API module exists; CLI not wired)
-- [ ] `ssh-keys create|delete` subcommands (API module exists; CLI not wired)
+- [x] `dns-records create|update|delete`
+- [x] `ssh-keys create|delete` subcommands
 
 - [ ] Filter flags: `servers list --state running`, `isos list --grep openbsd`
 - [ ] Colored output and `--quiet` for errors-only
@@ -32,7 +32,7 @@ Reference for later arpcli passes.
 - [ ] CI workflow running `prove -lr t`
 - [ ] Install target / package (OpenBSD port, Debian package)
 - [ ] Pod coverage in modules; `perldoc ArpCLI::Client`
-- [x] Live integration tests behind `ARPCLI_LIVE=1` guard (`t/fuzz-live.t`; see `AI-CRIBNOTES.md`)
+- [x] Live integration tests behind `ARPCLI_LIVE=1` guard (`t/fuzz-live.t`; see `AI-CRIBNOTES.txt`)
 
 ## Security
 

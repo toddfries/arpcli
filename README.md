@@ -40,7 +40,7 @@ perl Makefile.PL && make && make test
 Example output in [EXAMPLES.md](EXAMPLES.md).
 
 `prove -lr t/` runs the offline test suite (~279 tests). OpenBSD-style man pages
-live in `man/`. See `AI-CRIBNOTES.md` if you are an AI or a future-me picking
+live in `man/`. See `AI-CRIBNOTES.txt` if you are an AI or a future-me picking
 this back up. `script/sync-openapi` pulls the upstream OpenAPI spec when that
 changes.
 

@@ -63,7 +63,7 @@ my @write_cases = (
     [ 'dns_records update', sub { $client->dns_records->update(42, { hostname => 'h.example.com' }) } ],
     [ 'dns_records delete', sub { $client->dns_records->delete(42) } ],
     [ 'ssh_keys create', sub {
-        $client->ssh_keys->create({ name => 'k', public_key => 'ssh-ed25519 AAAA' });
+        $client->ssh_keys->create({ name => 'k', username => 'deploy', key => 'ssh-ed25519 AAAA' });
     } ],
     [ 'ssh_keys delete', sub { $client->ssh_keys->delete(9) } ],
     [ 'servers delete', sub { $client->servers->delete($uuid) } ],

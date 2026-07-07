@@ -30,6 +30,15 @@ sub extract_range {
     return $range;
 }
 
+sub extract_list_subcommand {
+    my ($args, $resource) = @_;
+    return 'list' unless @$args;
+    return 'list' if $args->[0] =~ /^-/;
+    my $sub = shift @$args;
+    die "arpcli: unknown $resource subcommand: $sub\n" unless $sub eq 'list';
+    return $sub;
+}
+
 sub extract_thunder {
     my ($args) = @_;
     my $thunder = 0;

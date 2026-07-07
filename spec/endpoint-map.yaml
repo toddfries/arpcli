@@ -20,7 +20,7 @@ changeIso:
   tags:
   - Server Actions
 createDnsRecord:
-  cli: null
+  cli: dns-records create
   http_method: POST
   method: create
   module: DnsRecords
@@ -40,7 +40,7 @@ createServer:
   tags:
   - Servers
 createSshKey:
-  cli: null
+  cli: ssh-keys create
   http_method: POST
   method: create
   module: SshKeys
@@ -50,7 +50,7 @@ createSshKey:
   tags:
   - SSH Keys
 deleteDnsRecord:
-  cli: null
+  cli: dns-records delete <id>
   http_method: DELETE
   method: delete
   module: DnsRecords
@@ -70,7 +70,7 @@ deleteServer:
   tags:
   - Servers
 deleteSshKey:
-  cli: null
+  cli: ssh-keys delete <id>
   http_method: DELETE
   method: delete
   module: SshKeys
@@ -230,7 +230,7 @@ shutdownServer:
   tags:
   - Server Actions
 updateDnsRecord:
-  cli: null
+  cli: dns-records update <id> <hostname>
   http_method: PATCH
   method: update
   module: DnsRecords

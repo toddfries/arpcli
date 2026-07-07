@@ -19,11 +19,6 @@ ok(@endpoints >= 1);
 
 my @known_missing_cli = qw(
     createServer
-    createDnsRecord
-    updateDnsRecord
-    deleteDnsRecord
-    createSshKey
-    deleteSshKey
 );
 my %expected_missing = map { $_ => 1 } @known_missing_cli;
 for my $miss (@{ $report->{missing_cli} // [] }) {

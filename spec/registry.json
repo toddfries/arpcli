@@ -22,7 +22,7 @@
          "summary" : "Change mounted ISO"
       },
       {
-         "cli" : null,
+         "cli" : "dns-records create",
          "http_method" : "POST",
          "method" : "create",
          "module" : "DnsRecords",
@@ -42,7 +42,7 @@
          "summary" : "Create a server"
       },
       {
-         "cli" : null,
+         "cli" : "ssh-keys create",
          "http_method" : "POST",
          "method" : "create",
          "module" : "SshKeys",
@@ -52,7 +52,7 @@
          "summary" : "Create an SSH key"
       },
       {
-         "cli" : null,
+         "cli" : "dns-records delete <id>",
          "http_method" : "DELETE",
          "method" : "delete",
          "module" : "DnsRecords",
@@ -72,7 +72,7 @@
          "summary" : "Delete a server"
       },
       {
-         "cli" : null,
+         "cli" : "ssh-keys delete <id>",
          "http_method" : "DELETE",
          "method" : "delete",
          "module" : "SshKeys",
@@ -232,7 +232,7 @@
          "summary" : "Shut down a server"
       },
       {
-         "cli" : null,
+         "cli" : "dns-records update <id> <hostname>",
          "http_method" : "PATCH",
          "method" : "update",
          "module" : "DnsRecords",

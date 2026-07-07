@@ -15,7 +15,7 @@ arpcli/
 ├── manuals/                # AI token-saving topic docs (partially auto-generated)
 ├── script/sync-openapi     # Pull OpenAPI spec; refresh manuals and registry
 ├── spec/                   # openapi.yaml, endpoint-map.yaml, manifests
-├── AI-CRIBNOTES.md         # AI agent briefing (update each pass)
+├── AI-CRIBNOTES.txt        # AI agent briefing (update each pass)
 └── future-options.md       # Next-session roadmap
 ```
 

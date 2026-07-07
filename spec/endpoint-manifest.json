@@ -26,7 +26,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "dns-records create",
       "http_method" : "POST",
       "method" : "create",
       "module" : "DnsRecords",
@@ -52,7 +52,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "ssh-keys create",
       "http_method" : "POST",
       "method" : "create",
       "module" : "SshKeys",
@@ -65,7 +65,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "dns-records delete <id>",
       "http_method" : "DELETE",
       "method" : "delete",
       "module" : "DnsRecords",
@@ -91,7 +91,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "ssh-keys delete <id>",
       "http_method" : "DELETE",
       "method" : "delete",
       "module" : "SshKeys",
@@ -299,7 +299,7 @@
       ]
    },
    {
-      "cli" : null,
+      "cli" : "dns-records update <id> <hostname>",
       "http_method" : "PATCH",
       "method" : "update",
       "module" : "DnsRecords",

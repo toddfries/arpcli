@@ -74,12 +74,25 @@ my @cases = (
     [ ['status', '--range'],                                      255, qr/--range requires a value/ ],
     [ ['status', '--bogus'],                                      255, qr/unknown status option/ ],
     [ ['dns-records'],                                            255, qr/requires a subcommand/ ],
-    [ ['dns-records', 'create'],                                  255, qr/unknown dns-records subcommand/ ],
-    [ ['dns-records', 'update', '1'],                             255, qr/unknown dns-records subcommand/ ],
-    [ ['dns-records', 'delete', '1'],                             255, qr/unknown dns-records subcommand/ ],
-    [ ['ssh-keys', 'create'],                                     255, qr/unknown ssh-keys subcommand/ ],
-    [ ['ssh-keys', 'delete', '1'],                                255, qr/unknown ssh-keys subcommand/ ],
+    [ ['dns-records', 'create'],                                  255, qr/requires <ip_address> <hostname>/ ],
+    [ ['dns-records', 'create', '10.0.0.2'],                     255, qr/requires <ip_address> <hostname>/ ],
+    [ ['dns-records', 'create', '10.0.0.2', 'ptr.example.com'],   1, qr/insufficient_scope|invalid JSON|HTTP|Could not connect/ ],
+    [ ['dns-records', 'update'],                                  255, qr/requires <id> <hostname>/ ],
+    [ ['dns-records', 'update', 'xxxx'],                          255, qr/requires <id> <hostname>/ ],
+    [ ['dns-records', 'update', 'xxxx', 'ptr.example.com'],         1, qr/insufficient_scope|invalid JSON|HTTP|Could not connect/ ],
+    [ ['dns-records', 'delete'],                                  255, qr/requires <id>/ ],
+    [ ['dns-records', 'delete', 'xxxx'],                            1, qr/insufficient_scope|invalid JSON|HTTP|Could not connect/ ],
+    [ ['ssh-keys', 'create'],                                     255, qr/requires <name> <username> <key>/ ],
+    [ ['ssh-keys', 'create', 'Laptop'],                           255, qr/requires <name> <username> <key>/ ],
+    [ ['ssh-keys', 'create', 'Laptop', 'deploy'],                 255, qr/requires <name> <username> <key>/ ],
+    [ ['ssh-keys', 'create', 'Laptop', 'deploy', 'ssh-ed25519 AAAA'], 1, qr/insufficient_scope|invalid JSON|HTTP|Could not connect/ ],
+    [ ['ssh-keys', 'delete'],                                   255, qr/requires <id>/ ],
+    [ ['ssh-keys', 'delete', '1'],                                  1, qr/insufficient_scope|invalid JSON|HTTP|Could not connect/ ],
     [ ['plans', 'create'],                                        255, qr/unknown plans subcommand/ ],
+    [ ['plans', '--json'],                                          1, qr/invalid JSON|HTTP|Could not connect|"plans"/ ],
+    [ ['plans', '--thunder', '--json'],                             1, qr/invalid JSON|HTTP|Could not connect|"plans"/ ],
+    [ ['locations', '--json'],                                      1, qr/invalid JSON|HTTP|Could not connect|"locations"/ ],
+    [ ['isos', '--json'],                                           1, qr/invalid JSON|HTTP|Could not connect|"isos"/ ],
     [ ['isos', 'list', '--thunder'],                              255, qr/unknown isos list option/ ],
     [ ['os-templates', 'list', '--range', '30d'],                 255, qr/unknown os-templates list option/ ],
     [ ['locations', 'list', '--thunder'],                         255, qr/unknown locations list option/ ],
@@ -90,6 +103,9 @@ my @cases = (
 for my $case (@cases) {
     my ($args, $want_exit, $pattern) = @$case;
     my ($exit, $out) = run_cli(@$args);
+    unlike($out, qr/unknown (?:plans|locations|isos|os-templates) subcommand: --json/,
+        join(' ', @$args) . ' does not treat --json as subcommand')
+        if grep { $_ eq '--json' } @$args;
     like($out, $pattern, join(' ', @$args) . ' stderr');
     is($exit, $want_exit, join(' ', @$args) . " exit $want_exit");
 }
