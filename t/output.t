@@ -71,6 +71,7 @@ my @warnings;
 close $fh;
 
 like($buf, qr/arp\.account/);
+like($buf, qr/services\.servers\.count=1/, 'full output prints server count');
 like($buf, qr/arp\.servers/);
 like($buf, qr/web-01/);
 like($buf, qr/arp\.dns_records/);
@@ -89,6 +90,9 @@ open $fh, '>', \$buf or die $!;
 close $fh;
 
 like($buf, qr/arp\.account/, 'brief output has account counts');
+like($buf, qr/services\.servers\.count=1/, 'brief output prints server count');
+like($buf, qr/services\.dns_records\.count=1/, 'brief output prints dns count');
+like($buf, qr/catalog\.plans\.count=2/, 'brief output prints plan count');
 like($buf, qr/arp\.servers/, 'brief output has server table');
 like($buf, qr/web-01/, 'brief output lists server label');
 unlike($buf, qr/server\.52326bc0/, 'brief output omits per-server detail');

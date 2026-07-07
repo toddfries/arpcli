@@ -72,7 +72,7 @@ my @cases = (
     [ ['servers', 'create'],                                      255, qr/unknown servers subcommand/ ],
 
     [ ['status', '--range'],                                      255, qr/--range requires a value/ ],
-    [ ['status', '--brief'],                                        0, qr/arp\.account/ ],
+    [ ['status', '--brief'],                                        0, qr/services\.servers\.count=/ ],
     [ ['status', '--bogus'],                                      255, qr/unknown status option/ ],
     [ ['dns-records'],                                            255, qr/requires a subcommand/ ],
     [ ['dns-records', 'create'],                                  255, qr/requires <ip_address> <hostname>/ ],

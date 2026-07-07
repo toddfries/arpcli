@@ -257,7 +257,12 @@ sub _pad_cell {
 }
 
 sub _line {
-    my ($self, $fh, $text) = @_;
+    my ($self, $fh, $text, $value) = @_;
+    if (@_ > 3) {
+        $value = 'n/a' unless defined $value;
+        print {$fh} $text, '=', $value, "\n";
+        return;
+    }
     print {$fh} $text, "\n";
 }
 
