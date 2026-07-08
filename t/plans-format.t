@@ -32,7 +32,7 @@ my $vps_row = ArpCLI::Plans::Format::row_values({
     ],
 }, 'vps');
 is_deeply($vps_row, [
-    '  1', 'vps_small', 'Small', sprintf('%6.2f', 10), sprintf('%6.2f', 0.01369863),
+    '  1', 'vps_small', 'Small', sprintf('%6.2f', 10), sprintf('%6.5f', 0.01369863),
     '40', '1024', '2',
 ]);
 
@@ -46,6 +46,7 @@ my $thunder_row = ArpCLI::Plans::Format::row_values({
         { name => 'CPU', quantity => 2, unit => 'core' },
     ],
 }, 'thunder');
+is($thunder_row->[4], sprintf('%6.5f', 0.05479452), 'hourly uses %6.5f');
 is($thunder_row->[5], '80+200');
 
 my $buf = '';

@@ -74,8 +74,8 @@ sub row_values {
         _id_cell($plan->{id}),
         $plan->{code},
         short_name($plan),
-        _price_cell($prices->{monthly}),
-        _price_cell($prices->{hourly}),
+        _monthly_price_cell($prices->{monthly}),
+        _hourly_price_cell($prices->{hourly}),
         _disk_cell(\%spec, $group),
         _spec_cell($spec{RAM}),
         _spec_cell($spec{CPU}),
@@ -87,10 +87,16 @@ sub _id_cell {
     return defined $id ? sprintf('%3d', 0 + $id) : '  -';
 }
 
-sub _price_cell {
+sub _monthly_price_cell {
     my ($amount) = @_;
     return sprintf('%6s', '-') unless defined $amount;
     return sprintf('%6.2f', $amount + 0);
+}
+
+sub _hourly_price_cell {
+    my ($amount) = @_;
+    return sprintf('%6s', '-') unless defined $amount;
+    return sprintf('%6.5f', $amount + 0);
 }
 
 sub _spec_cell {
@@ -128,7 +134,7 @@ sub _column_widths {
         [ 'ID', 'CODE', 'PLAN NAME', 'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
         [ '',   '',     '',          'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
     );
-    my @widths = (3, 4, 9, 6, 6, 4, 3, 3);
+    my @widths = (3, 4, 9, 6, 7, 4, 3, 3);
     for my $i (0 .. 7) {
         my $w = display_width($headers[0][$i]);
         $w = display_width($headers[1][$i]) if $w < display_width($headers[1][$i]);
