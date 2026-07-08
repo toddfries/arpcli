@@ -6,7 +6,7 @@ WriteMakefile(
     NAME             => 'ArpCLI',
     VERSION_FROM     => 'lib/ArpCLI.pm',
     ABSTRACT         => 'ARP Networks Platform API command-line client',
-    AUTHOR           => 'Todd <todd@local>',
+    AUTHOR           => 'Todd Fries <todd@fries.net>',
     EXE_FILES        => ['bin/arpcli'],
     PREREQ_PM        => {
         'HTTP::Tiny' => '0.056',
@@ -15,14 +15,5 @@ WriteMakefile(
     },
     TEST_REQUIRES    => {
         'Test::More' => '1.302',
-    },
-    META_MERGE       => {
-        'meta-spec' => { version => 2 },
-        resources   => {
-            repository => {
-                type => 'git',
-                url  => 'file:///home/todd/git/sw/arpcli',
-            },
-        },
     },
 );

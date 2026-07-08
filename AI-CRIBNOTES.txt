@@ -13,6 +13,7 @@ man/arpcli.1            man/arpcli.conf.5
 spec/                   OpenAPI, endpoint-map, registry
 EXAMPLES.md             defanged sample output
 future-options.md       roadmap
+Makefile.PL             PREREQ_PM: HTTP::Tiny, JSON::PP, YAML::PP; no META_MERGE file:// repo URL
 
 CLI (exit 0 ok, 1 usage, 2 API, 3 config)
 Read: status [--brief] [--range 30d], servers list [--state S] [--re PAT], servers show|bandwidth|billing|ssh-host-keys, plans/locations [list], isos/os-templates [list] [--re PAT], dns-records list, ssh-keys list — all --json

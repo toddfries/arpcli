@@ -9,8 +9,9 @@ To: anyone reading this
 I made this because I wanted a practical command-line tool for the ARP Networks
 Platform API (https://phoenix.arpnetworks.com/api/docs) — something I could run
 from a shell to see what is on my account without clicking through the dashboard.
-It is Perl, uses HTTP::Tiny and JSON::PP, and keeps the API key in a config file
-instead of hard-coding it anywhere in the tree.
+It is Perl 5.20+, uses HTTP::Tiny, JSON::PP, and YAML::PP (the last is required
+by `script/sync-openapi` and OpenAPI map parsing), and keeps the API key in a
+config file instead of hard-coding it anywhere in the tree.
 
 `arpcli status` walks everything your key can read and prints an outline-style
 report (sysctl-ish key=value lines, tables for servers and DNS, catalog listings
@@ -30,6 +31,7 @@ api_key = arp_live_your_key_here
 EOF
 chmod 600 ~/.config/arpcli/conf
 
+# deps: HTTP::Tiny, JSON::PP, YAML::PP (Makefile.PL lists versions)
 perl Makefile.PL && make && make test
 ./bin/arpcli status
 ./bin/arpcli servers list
@@ -39,7 +41,7 @@ perl Makefile.PL && make && make test
 
 Example output in [EXAMPLES.md](EXAMPLES.md).
 
-`prove -lr t/` runs the offline test suite (~279 tests). OpenBSD-style man pages
+`prove -lr t/` runs the offline test suite (~406 tests; needs Test::More). OpenBSD-style man pages
 live in `man/`. See `AI-CRIBNOTES.txt` if you are an AI or a future-me picking
 this back up. `script/sync-openapi` pulls the upstream OpenAPI spec when that
 changes.
