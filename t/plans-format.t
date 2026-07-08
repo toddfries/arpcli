@@ -45,9 +45,20 @@ my $thunder_row = ArpCLI::Plans::Format::row_values({
         { name => 'Storage', quantity => 80, unit => 'GB' },
         { name => 'CPU', quantity => 2, unit => 'core' },
     ],
-}, 'thunder');
+}, 'thunder', thunder_left_w => 3, thunder_right_w => 3);
 is($thunder_row->[4], sprintf('%6.5f', 0.05479452), 'hourly uses %6.5f');
-is($thunder_row->[5], '80+200');
+is($thunder_row->[5], ' 80+200', 'thunder disk aligns around fixed +');
+
+is(ArpCLI::Plans::Format::row_values({
+    id => 10, code => 'thunder_large', name => 'ARP Thunder™ - Large Plan',
+    prices => { monthly => 120 },
+    specs => [
+        { name => 'Storage', quantity => 200, unit => 'GB' },
+        { name => 'Storage (SATA)', quantity => 500, unit => 'GB' },
+        { name => 'CPU', quantity => 8, unit => 'core' },
+        { name => 'RAM', quantity => 16384, unit => 'MB' },
+    ],
+}, 'thunder', thunder_left_w => 3, thunder_right_w => 3)->[5], '200+500');
 
 my $buf = '';
 open my $fh, '>', \$buf or die $!;
@@ -70,6 +81,7 @@ like($buf, qr/PLAN NAME/);
 like($buf, qr/Price\s+Specs/m);
 like($buf, qr/monthly\s+hourly.*Disk\s+RAM\s+CPU/m);
 like($buf, qr/80\+200/);
+like($buf, qr/\s80\+200/, 'thunder disk column fixes + position');
 like($buf, qr/Storage \(SATA\)/);
 unlike($buf, qr/ARP Thunder™/);
 

@@ -66,7 +66,7 @@ sub print_grouped {
 }
 
 sub row_values {
-    my ($plan, $group) = @_;
+    my ($plan, $group, %opts) = @_;
     my %spec = map { $_->{name} => $_ } @{ $plan->{specs} // [] };
     my $prices = $plan->{prices} // {};
 
@@ -76,7 +76,7 @@ sub row_values {
         short_name($plan),
         _monthly_price_cell($prices->{monthly}),
         _hourly_price_cell($prices->{hourly}),
-        _disk_cell(\%spec, $group),
+        _disk_cell(\%spec, $group, %opts),
         _spec_cell($spec{RAM}),
         _spec_cell($spec{CPU}),
     ];
@@ -108,18 +108,60 @@ sub _spec_cell {
 }
 
 sub _disk_cell {
-    my ($spec, $group) = @_;
+    my ($spec, $group, %opts) = @_;
     if ($group eq 'thunder') {
-        my $primary = _spec_cell($spec->{Storage});
-        my $sata    = _spec_cell($spec->{'Storage (SATA)'});
-        return $primary eq '-' ? $sata : ($sata eq '-' ? $primary : "$primary+$sata");
+        return _thunder_disk_cell(
+            $spec,
+            $opts{thunder_left_w},
+            $opts{thunder_right_w},
+        );
     }
     return _spec_cell($spec->{Storage});
 }
 
+sub _thunder_disk_widths {
+    my ($plans) = @_;
+    my ($max_l, $max_r) = (1, 1);
+    for my $plan (@$plans) {
+        my %spec = map { $_->{name} => $_ } @{ $plan->{specs} // [] };
+        my $left  = _spec_quantity($spec{'Storage'});
+        my $right = _spec_quantity($spec{'Storage (SATA)'});
+        $max_l = length($left) if $left ne '-' && length($left) > $max_l;
+        $max_r = length($right) if $right ne '-' && length($right) > $max_r;
+    }
+    return ($max_l, $max_r);
+}
+
+sub _thunder_disk_cell {
+    my ($spec, $lw, $rw) = @_;
+    $lw //= 1;
+    $rw //= 1;
+    my $left  = _spec_quantity($spec->{Storage});
+    my $right = _spec_quantity($spec->{'Storage (SATA)'});
+    if ($left eq '-' && $right eq '-') {
+        return _rpad('-', $lw + 1 + $rw);
+    }
+    my $l = $left  eq '-' ? sprintf("%${lw}s", '-') : sprintf("%${lw}d", 0 + $left);
+    my $r = $right eq '-' ? sprintf("%${rw}s", '-') : sprintf("%${rw}d", 0 + $right);
+    return "$l+$r";
+}
+
+sub _spec_quantity {
+    my ($spec) = @_;
+    return '-' unless $spec;
+    my $q = $spec->{quantity};
+    return '-' unless defined $q;
+    return int($q) if $q == int($q);
+    return "$q";
+}
+
 sub _print_plans_table {
     my ($fh, $plans, $group) = @_;
-    my @rows = map { row_values($_, $group) } @$plans;
+    my %disk_opts;
+    if ($group eq 'thunder') {
+        @disk_opts{qw(thunder_left_w thunder_right_w)} = _thunder_disk_widths($plans);
+    }
+    my @rows = map { row_values($_, $group, %disk_opts) } @$plans;
     my @widths = _column_widths(\@rows);
     _print_header_row($fh, \@widths);
     for my $row (@rows) {
@@ -165,7 +207,7 @@ sub _print_header_row {
         _pad('', $widths->[2]),
         _rpad('monthly', $widths->[3]),
         _rpad('hourly', $widths->[4]),
-        _pad('Disk', $widths->[5]),
+        _rpad('Disk', $widths->[5]),
         _rpad('RAM', $widths->[6]),
         _pad('CPU', $widths->[7]),
     );
@@ -175,7 +217,7 @@ sub _print_header_row {
 
 sub _print_data_row {
     my ($fh, $row, $widths) = @_;
-    my @align = qw(lpad pad pad rpad rpad pad rpad pad);
+    my @align = qw(lpad pad pad rpad rpad rpad rpad pad);
     print {$fh} join(' ', map {
         _align_cell($row->[$_] // '', $widths->[$_], $align[$_])
     } 0 .. 7), "\n";

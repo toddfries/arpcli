@@ -3,6 +3,7 @@ package ArpCLI::Output;
 use strict;
 use warnings;
 
+use ArpCLI::Plans::Format;
 use ArpCLI::Util qw(format_bytes format_specs flatten_os_templates display_width);
 
 sub new {
@@ -61,7 +62,7 @@ sub _section_servers {
             label   => $s->{label} // '',
             uuid    => $s->{uuid} // '',
             state   => $s->{state} // '',
-            plan    => $s->{plan} // '',
+            plan    => ArpCLI::Plans::Format::short_name({ name => $s->{plan} }),
             os      => $s->{os_template} // '',
             ipv4    => $s->{primary_ipv4} // '-',
             ipv6    => $s->{primary_ipv6} // '-',

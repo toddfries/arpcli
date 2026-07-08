@@ -166,7 +166,13 @@ sub cmd_servers {
         );
         print_table([qw(LABEL UUID STATE PLAN IPv4)], $servers, sub {
             my ($s) = @_;
-            ($s->{label}, $s->{uuid}, $s->{state}, $s->{plan}, $s->{primary_ipv4} // '-');
+            (
+                $s->{label},
+                $s->{uuid},
+                $s->{state},
+                ArpCLI::Plans::Format::short_name({ name => $s->{plan} }),
+                $s->{primary_ipv4} // '-',
+            );
         });
         return 0;
     }
