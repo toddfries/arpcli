@@ -11,7 +11,11 @@ is(ArpCLI::Plans::Format::group({ code => 'vps_small' }), 'vps');
 is(ArpCLI::Plans::Format::group({ code => 'thunder_starter' }), 'thunder');
 is(
     ArpCLI::Plans::Format::short_name({ name => 'ARP Thunder™ - Starter Plan' }),
-    'Starter Plan',
+    'Starter',
+);
+is(
+    ArpCLI::Plans::Format::short_name({ name => 'VPS - Small Plan' }),
+    'Small',
 );
 is(
     ArpCLI::Plans::Format::short_name({ name => 'VPS - "The American"' }),
@@ -27,7 +31,10 @@ my $vps_row = ArpCLI::Plans::Format::row_values({
         { name => 'CPU', quantity => 2, unit => 'core' },
     ],
 }, 'vps');
-is_deeply($vps_row, [1, 'vps_small', 'Small Plan', '10.00', '0.0137', '40', '1024', '2']);
+is_deeply($vps_row, [
+    '  1', 'vps_small', 'Small', sprintf('%6.2f', 10), sprintf('%6.2f', 0.01369863),
+    '40', '1024', '2',
+]);
 
 my $thunder_row = ArpCLI::Plans::Format::row_values({
     id => 7, code => 'thunder_starter', name => 'ARP Thunder™ - Starter Plan',
@@ -58,8 +65,9 @@ ArpCLI::Plans::Format::print_grouped($fh, [
 ]);
 close $fh;
 like($buf, qr/^VPS/m);
+like($buf, qr/PLAN NAME/);
 like($buf, qr/Price\s+Specs/m);
-like($buf, qr/monthly hourly.*Disk\s+RAM\s+CPU/m);
+like($buf, qr/monthly\s+hourly.*Disk\s+RAM\s+CPU/m);
 like($buf, qr/80\+200/);
 like($buf, qr/Storage \(SATA\)/);
 unlike($buf, qr/ARP Thunder™/);

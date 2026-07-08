@@ -31,6 +31,7 @@ sub short_name {
     $name =~ s/\AVPS\s*-\s*//i;
     $name =~ s/\AARP\s+Thunder(?:\x{2122}|™)?\s*-\s*//i;
     $name =~ s/^"|"$//g;
+    $name =~ s/\s+Plan\z//i;
     return $name;
 }
 
@@ -70,23 +71,26 @@ sub row_values {
     my $prices = $plan->{prices} // {};
 
     return [
-        $plan->{id},
+        _id_cell($plan->{id}),
         $plan->{code},
         short_name($plan),
         _price_cell($prices->{monthly}),
-        _price_cell($prices->{hourly}, hourly => 1),
+        _price_cell($prices->{hourly}),
         _disk_cell(\%spec, $group),
         _spec_cell($spec{RAM}),
         _spec_cell($spec{CPU}),
     ];
 }
 
+sub _id_cell {
+    my ($id) = @_;
+    return defined $id ? sprintf('%3d', 0 + $id) : '  -';
+}
+
 sub _price_cell {
-    my ($amount, %opts) = @_;
-    return '-' unless defined $amount;
-    return $opts{hourly}
-        ? sprintf('%.4f', $amount + 0)
-        : sprintf('%.2f', $amount + 0);
+    my ($amount) = @_;
+    return sprintf('%6s', '-') unless defined $amount;
+    return sprintf('%6.2f', $amount + 0);
 }
 
 sub _spec_cell {
@@ -121,10 +125,10 @@ sub _print_plans_table {
 sub _column_widths {
     my ($rows) = @_;
     my @headers = (
-        [ 'ID', 'CODE', 'NAME', 'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
-        [ '',   '',     '',     'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
+        [ 'ID', 'CODE', 'PLAN NAME', 'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
+        [ '',   '',     '',          'monthly', 'hourly', 'Disk', 'RAM', 'CPU' ],
     );
-    my @widths = (2, 4, 4, 7, 6, 4, 3, 3);
+    my @widths = (3, 4, 9, 6, 6, 4, 3, 3);
     for my $i (0 .. 7) {
         my $w = display_width($headers[0][$i]);
         $w = display_width($headers[1][$i]) if $w < display_width($headers[1][$i]);
@@ -143,20 +147,20 @@ sub _print_header_row {
     my $spec_span  = $widths->[5] + 1 + $widths->[6] + 1 + $widths->[7];
 
     my $line1 = join(' ',
-        _pad('ID', $widths->[0]),
+        _lpad('ID', $widths->[0]),
         _pad('CODE', $widths->[1]),
-        _pad('NAME', $widths->[2]),
+        _pad('PLAN NAME', $widths->[2]),
         _pad('Price', $price_span),
         _pad('Specs', $spec_span),
     );
     my $line2 = join(' ',
-        _pad('', $widths->[0]),
+        _lpad('', $widths->[0]),
         _pad('', $widths->[1]),
         _pad('', $widths->[2]),
-        _pad('monthly', $widths->[3]),
-        _pad('hourly', $widths->[4]),
+        _rpad('monthly', $widths->[3]),
+        _rpad('hourly', $widths->[4]),
         _pad('Disk', $widths->[5]),
-        _pad('RAM', $widths->[6]),
+        _rpad('RAM', $widths->[6]),
         _pad('CPU', $widths->[7]),
     );
     print {$fh} $line1, "\n", $line2, "\n";
@@ -165,10 +169,18 @@ sub _print_header_row {
 
 sub _print_data_row {
     my ($fh, $row, $widths) = @_;
+    my @align = qw(lpad pad pad rpad rpad pad rpad pad);
     print {$fh} join(' ', map {
-        _pad($row->[$_] // '', $widths->[$_])
+        _align_cell($row->[$_] // '', $widths->[$_], $align[$_])
     } 0 .. 7), "\n";
     return;
+}
+
+sub _align_cell {
+    my ($text, $width, $align) = @_;
+    return _rpad($text, $width) if $align eq 'rpad';
+    return _lpad($text, $width) if $align eq 'lpad';
+    return _pad($text, $width);
 }
 
 sub _pad {
@@ -177,6 +189,19 @@ sub _pad {
     my $pad = $width - display_width($text);
     $pad = 0 if $pad < 0;
     return $text . (' ' x $pad);
+}
+
+sub _rpad {
+    my ($text, $width) = @_;
+    $text //= '';
+    my $pad = $width - display_width($text);
+    $pad = 0 if $pad < 0;
+    return (' ' x $pad) . $text;
+}
+
+sub _lpad {
+    my ($text, $width) = @_;
+    return _rpad($text, $width);
 }
 
 1;
